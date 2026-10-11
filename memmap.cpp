@@ -6076,8 +6076,9 @@ void CMemory::ApplyROMFixes (void)
 
 	// Astro Hawk (PD): enables NMI before clearing WRAM, so the NMI handler
 	// runs on power-on garbage; only boots if WRAM starts zeroed. CRC match —
-	// its internal header is blank.
-	if (ROMCRC32 == 0x41D59381)
+	// its internal header is blank. Cute Angela (Unl): its NMI DMA queue end
+	// ($1175) is never cleared, and $5555 fires thousands of garbage DMAs.
+	if (ROMCRC32 == 0x41D59381 || ROMCRC32 == 0x30A73CE4)
 	{
 		SNESGameFixes.RAMInitialValue = 0x00;
 		printf("Applied zeroed-WRAM hack.\n");
