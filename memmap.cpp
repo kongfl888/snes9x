@@ -5970,6 +5970,25 @@ static const struct
 	{ 0xB56EC084, "Rin Kaihou Kudan no Igo Taidou (J)" },
 };
 
+// Super Ice Hockey (E): RNG at C0:9C85 is s = rotl(s) + both pads, and the
+// pick-again loop at C2:2E8D never re-reads the pads, so a fixed point hangs it.
+static const uint8	kIceHockeyCheck[] =
+{
+	0x08, 0xC2, 0x30, 0x48,				// PHP / REP #$30 / PHA
+	0xAD, 0x96, 0x14, 0xEB,				// LDA $1496 / XBA
+	0x29, 0x03, 0x00, 0xF0, 0x05,		// AND #$0003 / BEQ set
+	0xC9, 0x03, 0x00, 0xD0, 0x01,		// CMP #$0003 / BNE go
+	0x38,								// set: SEC (bits 9-8 equal)
+	0xAD, 0x96, 0x14, 0x2A,				// go: LDA $1496 / ROL
+	0x18, 0x6D, 0x48, 0x10,				// CLC / ADC $1048 (pad 1)
+	0x18, 0x6D, 0x4A, 0x10,				// CLC / ADC $104A (pad 2)
+	0xCD, 0x96, 0x14, 0xD0, 0x03,		// CMP $1496 / BNE done
+	0xEE, 0x96, 0x14,					// INC $1496 - off the fixed point
+	0x68, 0x28,							// done: PLA / PLP
+	0x82, 0x00, 0x00					// BRL $2E8D (offset filled in)
+};
+static uint8	IceHockeyBankC2[0x10000];
+
 void CMemory::ApplyROMFixes (void)
 {
 	Settings.BlockInvalidVRAMAccess = Settings.BlockInvalidVRAMAccessMaster;
@@ -5982,6 +6001,36 @@ void CMemory::ApplyROMFixes (void)
 	{
 		SNESGameFixes.RAMInitialValue = 0x00;
 		printf("Applied zeroed-WRAM hack.\n");
+	}
+
+	// Super Ice Hockey (Europe): its retry BRL at C2:3015 goes through
+	// kIceHockeyCheck in unused C2:0330. Bank C2 runs from a patched copy, so
+	// Memory.ROM, its CRC and the RetroAchievements hash stay the original.
+	if (ROMCRC32 == 0xFB1D16C4 && HiROM && CalculatedSize == 0x100000)
+	{
+		static const uint8	kRetry[] = { 0xD0, 0x03, 0x82, 0x75, 0xFE };	// BNE +3 / BRL $2E8D
+		const uint8			*bank = ROM + 0x20000;
+		const uint32		cave = 0x0330, end = cave + sizeof(kIceHockeyCheck);
+		bool8				free_cave = TRUE;
+
+		for (uint32 i = cave; i < end; i++)
+			free_cave &= bank[i] == 0;
+
+		if (free_cave && memcmp(bank + 0x3013, kRetry, sizeof(kRetry)) == 0)
+		{
+			memcpy(IceHockeyBankC2, bank, sizeof(IceHockeyBankC2));
+			memcpy(IceHockeyBankC2 + cave, kIceHockeyCheck, sizeof(kIceHockeyCheck));
+			WRITE_WORD(IceHockeyBankC2 + end - 2, (uint16) (0x2E8D - end));
+			WRITE_WORD(IceHockeyBankC2 + 0x3016, (uint16) (cave - 0x3018));
+
+			for (uint32 b = 0; b < 16; b++)
+			{
+				Map[(0xC2 << 4) | b] = IceHockeyBankC2;
+				Map[(0x42 << 4) | b] = IceHockeyBankC2;
+			}
+
+			printf("Applied Super Ice Hockey RNG fix.\n");
+		}
 	}
 
 	// Games that upload graphics to VRAM with the screen still on. Blocking
