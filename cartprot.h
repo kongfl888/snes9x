@@ -5,7 +5,9 @@ enum
 {
 	CARTPROT_NONE,
 	CARTPROT_TEKKEN2,		// "Tekken 2" / Street Fighter EX command chip at $80-$BF:$8000
-	CARTPROT_BUGSLIFE		// "A Bug's Life" XOR ports at $xx:6000-$6FFF
+	CARTPROT_BUGSLIFE,		// "A Bug's Life" XOR ports at $xx:6000-$6FFF
+	CARTPROT_BITSWAP,		// "Pocket Monster" family: latch read back bit-permuted in banks $80/$81/$88/$89/..
+	CARTPROT_BITSWAP40		// the same latch at $40-$7D:8000-$FFFF (Marvel Super Heroes vs. Street Fighter)
 };
 
 // Security chips found on unlicensed LoROM carts.
@@ -16,6 +18,7 @@ struct SCartProt
 	uint8	Argument;
 	uint8	Answer;
 	uint8	Xor[4];
+	uint8	Latch;
 };
 
 extern struct SCartProt	CartProt;

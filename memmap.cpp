@@ -4694,6 +4694,31 @@ void CMemory::Map_Initialize (void)
 // never executes out of $80-$BF, so routing that window costs nothing.
 void CMemory::map_CartProt (void)
 {
+	if (S9xCartProtKind() == CARTPROT_BITSWAP)
+	{
+		// the latch decodes A23 with A17/A18 low: the ROM half of those banks, plus the
+		// $4000-$41FF window the CPU leaves to the cart (registers are passed through)
+		for (uint32 bank = 0x80; bank <= 0xff; bank++)
+		{
+			if (bank & 0x06)
+				continue;
+			for (uint32 block = 8; block < 16; block++)
+				Map[(bank << 4) | block] = (uint8 *) MAP_CARTPROT;
+			if (bank < 0xc0)
+				Map[(bank << 4) | 4] = WriteMap[(bank << 4) | 4] = (uint8 *) MAP_CARTPROT;
+		}
+		return;
+	}
+
+	if (S9xCartProtKind() == CARTPROT_BITSWAP40)
+	{
+		// this board decodes A22 instead: the ROM half of $40-$7D (it uses $40, $46 and $4E)
+		for (uint32 bank = 0x40; bank < 0x7e; bank++)
+			for (uint32 block = 8; block < 16; block++)
+				Map[(bank << 4) | block] = (uint8 *) MAP_CARTPROT;
+		return;
+	}
+
 	if (S9xCartProtKind() == CARTPROT_BUGSLIFE)
 	{
 		// A Bug's Life: ports at $6000-$6FFF of the system banks, unmapped on LoROM

@@ -18,10 +18,16 @@
 // "A Bug's Life" (Pirate) checks ports at $xx:6000-$6FFF instead ($00:CAC0):
 // $60xx clears, $62/64/66/68xx XOR into four nibbles, $61/63/65/67xx read them
 // and $6Fxx reads all four XORed. Model derived from the game's $E compare.
+//
+// The "Pocket Monster" family (MAME lorom_poke) latches any write to a bank with
+// A23 set and A17/A18 clear, and reads it back there bit-permuted (bits
+// 0,6,7,1,2,3,4,5). MAME decodes A16 too, but Digimon talks to it at $81/$89:40xx.
+// Marvel Super Heroes vs. Street Fighter has the same latch on A22: $40-$7D:8000+.
 
 #include "snes9x.h"
 #include "memmap.h"
 #include "cartprot.h"
+#include "ppu.h"
 
 extern uint8	OpenBus;
 
@@ -29,6 +35,7 @@ struct SCartProt	CartProt;
 
 static uint8	*ProtRomBase[0x40];
 static int		ProtKind = CARTPROT_NONE;
+static bool8	BankOverlay;	// KOF '98: bitswap chip plus the bank $00 overlay register
 
 // answer[(command << 4) | argument]
 static const uint8	kAnswer[64] =
@@ -47,16 +54,63 @@ static const uint8	kAnswer[64] =
 	0x0, 0x8, 0x4, 0xC, 0x7, 0xF, 0x3, 0xB, 0x2, 0xA, 0x6, 0xE, 0x5, 0xD, 0x1, 0x9
 };
 
+// CRC32s of the bitswap carts, as listed by MAME (their code shares no signature).
+static const uint32	kBitswapCarts[] =
+{
+	0x40242231,	// X-Men vs. Street Fighter
+	0x6C303FC9,	// The King of Fighters '98
+	0xA7813943,	// The King of Fighters 2000
+	0x5E4ADA04,	// Soul Edge vs Samurai
+	0x4F660972,	// Digimon Adventure
+	0x752A25D3,	// Aladdin 2000
+	0x7C0B798D,	// Pokemon Gold & Silver
+	0xBAD1D9B8,	// Squirrel
+	0xF863C642,	// Pokemon Stadium
+	0x892C6765,	// Pocket Monster ("Picachu")
+};
+
+static uint32 Crc32 (const uint8 *p, uint32 size)
+{
+	static uint32	table[256];
+	if (!table[1])
+		for (uint32 i = 0; i < 256; i++)
+		{
+			uint32	c = i;
+			for (int k = 0; k < 8; k++)
+				c = (c & 1) ? 0xEDB88320 ^ (c >> 1) : c >> 1;
+			table[i] = c;
+		}
+
+	uint32	crc = 0xFFFFFFFF;
+	for (uint32 i = 0; i < size; i++)
+		crc = table[(crc ^ p[i]) & 0xFF] ^ (crc >> 8);
+	return (~crc);
+}
+
 // The protocol routines at $00:B5DF (write a burst) and $00:B693 (read the
 // answer) are the signature; the blank header alone is not specific enough.
 static int DetectKind (uint8 *rom, uint32 size)
 {
+	BankOverlay = FALSE;
+
+	if (size >= 0x100000 && size <= 0x400000)
+	{
+		const uint32	crc = Crc32(rom, size);
+		if (crc == 0xCDB590E4)		// Marvel Super Heroes vs. Street Fighter
+			return (CARTPROT_BITSWAP40);
+		for (uint32 i = 0; i < sizeof(kBitswapCarts) / sizeof(kBitswapCarts[0]); i++)
+			if (crc == kBitswapCarts[i])
+			{
+				BankOverlay = (crc == 0x6C303FC9);
+				return (CARTPROT_BITSWAP);
+			}
+	}
+
 	static const uint8	kBurst[] = { 0x08, 0xA0, 0x00, 0x00, 0xAE, 0x1A, 0x03, 0xA9, 0x0F, 0x00, 0x97, 0x16 };
 	static const uint8	kFetch[] = { 0x08, 0xA0, 0x00, 0x01, 0xA2, 0x00, 0x01, 0xB7, 0x16, 0x8D, 0x74, 0x02 };
 
-	// Only the 2 MB image is verified. The 8 MB "Tekken 2 (USA) (Pirate)"
-	// 2-in-1 carries the same code twice but needs a multicart mapper it
-	// does not have, and its banks $80-$BF hold real ROM - leave it alone.
+	// Only the 2 MB image is verified. The 8 MB "Tekken 2 (USA) (Pirate)" is
+	// that image with every bank doubled, which the loader folds back first.
 	if (size != 0x200000)
 		return (CARTPROT_NONE);
 
@@ -93,10 +147,23 @@ int S9xCartProtKind (void)
 	return (ProtKind);
 }
 
+// KOF '98 moved routines out of bank $00 and runs them from WRAM with their 32K
+// ROM bank paged over $00:8000-$FFFF (bit 7 set); writing $00 pages bank 0 back.
+static void SetBankOverlay (uint8 data)
+{
+	const uint32	bank = (data & 0x80) ? (data & 0x7F) % (Memory.CalculatedSize / 0x8000) : 0;
+
+	for (uint32 block = 8; block < 16; block++)
+		Memory.Map[block] = Memory.ROM + bank * 0x8000 - 0x8000;
+}
+
 void S9xCartProtReset (void)
 {
 	memset(&CartProt, 0, sizeof(CartProt));
 	CartProt.Answer = kAnswer[0];
+
+	if (ProtKind == CARTPROT_BITSWAP && BankOverlay)
+		SetBankOverlay(0);
 }
 
 // A Bug's Life: the chip decodes A11-A8 of $6000-$6FFF only.
@@ -131,6 +198,13 @@ static uint8 BugsLifeRead (uint32 address)
 	return ((OpenBus & 0xF0) | v);
 }
 
+// Bitswap block 4 of the system banks: the joypad ports and $4200 up stay the CPU's.
+static bool8 BitswapPassThrough (uint32 address)
+{
+	const uint32	a = address & 0xFFFF;
+	return (!(address & 0x400000) && (a & 0xF000) == 0x4000 && (a >= 0x4200 || a == 0x4016 || a == 0x4017));
+}
+
 void S9xCartProtSetRomBase (uint32 bank, uint8 *base)
 {
 	if (bank >= 0x80 && bank <= 0xBF)
@@ -140,6 +214,25 @@ void S9xCartProtSetRomBase (uint32 bank, uint8 *base)
 // Every write the cart window sees; only $8000-$87FF means anything.
 void S9xCartProtWrite (uint32 address, uint8 data)
 {
+	if (ProtKind == CARTPROT_BITSWAP40)
+	{
+		if ((address & 0xC08000) == 0x408000 && address < 0x7E0000)
+			CartProt.Latch = data;
+		return;
+	}
+
+	if (ProtKind == CARTPROT_BITSWAP)
+	{
+		if (BankOverlay && (address & 0xC08000) == 0xC08000)
+			SetBankOverlay(data);
+		if (((address >> 16) & 0x86) != 0x80)
+			return;
+		if (BitswapPassThrough(address))
+			S9xSetCPU(data, address & 0xFFFF);
+		CartProt.Latch = data;
+		return;
+	}
+
 	if (ProtKind == CARTPROT_BUGSLIFE)
 	{
 		if ((address & 0xF000) == 0x6000)
@@ -175,6 +268,16 @@ void S9xCartProtWrite (uint32 address, uint8 data)
 // code runs out of $8100-$820A.
 uint8 S9xCartProtRead (uint32 address)
 {
+	if (ProtKind == CARTPROT_BITSWAP || ProtKind == CARTPROT_BITSWAP40)
+	{
+		if (ProtKind == CARTPROT_BITSWAP && BitswapPassThrough(address))
+			return (S9xGetCPU(address & 0xFFFF));
+
+		const uint8	v = CartProt.Latch;
+		return ((v & 0x01) << 7 | (v & 0x40) | (v & 0x80) >> 2 | (v & 0x02) << 3 |
+		        (v & 0x04) << 1 | (v & 0x08) >> 1 | (v & 0x10) >> 3 | (v & 0x20) >> 5);
+	}
+
 	if (ProtKind == CARTPROT_BUGSLIFE)
 		return (((address & 0xF000) == 0x6000) ? BugsLifeRead(address) : OpenBus);
 
