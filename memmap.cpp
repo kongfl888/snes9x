@@ -2589,6 +2589,24 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 	}
 	const bool8	superdisc = S9xSuperDiscIsBIOS(ROM, (uint32) ROMfillSize);
 
+	// A LoROM cart read through HiROM addressing doubles every 32K bank, and such
+	// overdumps often repeat whole: fold them back to the cart image first.
+	if (ROMfillSize >= 0x100000 && (ROMfillSize & 0xFFFF) == 0 && !superdisc)
+	{
+		bool8	doubled = TRUE;
+		for (int32 i = 0; doubled && i < ROMfillSize; i += 0x10000)
+			doubled = memcmp(ROM + i, ROM + i + 0x8000, 0x8000) == 0;
+
+		if (doubled)
+		{
+			for (int32 i = 0; i < ROMfillSize / 2; i += 0x8000)
+				memmove(ROM + i, ROM + i * 2, 0x8000);
+			ROMfillSize /= 2;
+			while (ROMfillSize > 0x100000 && memcmp(ROM, ROM + ROMfillSize / 2, ROMfillSize / 2) == 0)
+				ROMfillSize /= 2;
+		}
+	}
+
 	int	hi_score, lo_score;
 	int score_headered;
 	int score_nonheadered;
