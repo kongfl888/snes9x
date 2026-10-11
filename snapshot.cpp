@@ -299,6 +299,7 @@ static FreezeData	SnapPPU[] =
 	ARRAY_ENTRY(6, OAMData, 512 + 32, uint8_ARRAY_V),
 	INT_ENTRY(6, FirstSprite),
 	INT_ENTRY(6, LastSprite),
+	INT_ENTRY(SNAPSHOT_VERSION_RTO, RangeTimeOver),
 	INT_ENTRY(6, HTimerEnabled),
 	INT_ENTRY(6, VTimerEnabled),
 	INT_ENTRY(6, HTimerPosition),
@@ -1855,6 +1856,7 @@ int S9xUnfreezeFromStream (STREAM stream)
 		CPU.LastBusStart = CPU.Cycles;
 		CPU.LastRunStart = CPU.Cycles - 1;
 		CPU.HDMAEdge = 0;
+		CPU.HDMAENDeferred = FALSE;
 		S9xUpdateFastBusEnd();
 		CPU.IRQDeferOne = FALSE;
 

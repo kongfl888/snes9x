@@ -13,7 +13,8 @@
 #define SNAPSHOT_VERSION_IRQ		7
 #define SNAPSHOT_VERSION_BAPU		8
 #define SNAPSHOT_VERSION_IRQ_2018	11		// irq changes were introduced earlier, since this we store NextIRQTimer directly
-#define SNAPSHOT_VERSION			12
+#define SNAPSHOT_VERSION_RTO		13		// PPU.RangeTimeOver ($213E bits 6-7) is saved
+#define SNAPSHOT_VERSION			13
 
 #define SUCCESS					1
 #define WRONG_FORMAT			(-1)
