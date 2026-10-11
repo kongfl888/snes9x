@@ -6180,7 +6180,8 @@ void CMemory::ApplyROMFixes (void)
 		match_na("SATAN IS OUR FATHER!") ||
 		match_na("S.F.S.95 della SerieA") ||
 		match_id("AACJ") || // Nichibutsu Arcade Classics
-		match_na("goemon 4"))               // Ganbare Goemon Kirakira Douchuu
+		match_na("goemon 4") ||             // Ganbare Goemon Kirakira Douchuu
+		ROMCRC32 == 0x65CE3729)             // Power Slide (Europe) (Proto): reads GSU RAM before writing it
 		SNESGameFixes.SRAMInitialValue = 0x00;
 
 	// Additional game fixes by sanmaiwashi ...
