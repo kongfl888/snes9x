@@ -3775,6 +3775,9 @@ void CMemory::ParseSNESHeader (uint8 *RomHeader)
 		ROMSize = RomHeader[0x27];
 
 	SRAMSize  = bs ? 5 /* BS-X */    : RomHeader[0x28];
+	// Past 512K (SRAM_SIZE) the byte is garbage, e.g. an FFh proto header; 256K as Mesen
+	if (SRAMSize > 9)
+		SRAMSize = 8;
 	ROMSpeed  = bs ? RomHeader[0x28] : RomHeader[0x25];
 	ROMType   = bs ? 0xE5 /* BS-X */ : RomHeader[0x26];
 	ROMRegion = bs ? 0               : RomHeader[0x29];
