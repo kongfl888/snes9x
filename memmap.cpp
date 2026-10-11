@@ -2580,7 +2580,9 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 
 	bool headered_score_highest = score_headered > score_nonheadered;
 
-	if (HeaderCount == 0 && !Settings.ForceNoHeader && headered_score_highest && !superdisc)
+	// An exact multiple of 8K has no room for a 512-byte copier header (blank-header betas)
+	if (HeaderCount == 0 && !Settings.ForceNoHeader && headered_score_highest && !superdisc &&
+		(ROMfillSize & 0x1FFF) != 0)
 	{
 		memmove(ROM, ROM + 512, ROMfillSize - 512);
 		ROMfillSize -= 512;
