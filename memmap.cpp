@@ -2731,11 +2731,28 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 		}
 	}
 
-	// this two games fail to be detected
+	// A type-1 de-interleave must move this header into the other mapping's slot,
+	// or the map byte lied (Killer Instinct (USA) (Beta): HiROM image, LoROM byte).
+	if (interleaved && !Settings.ForceInterleaved && !Settings.ForceInterleaved2 && !Settings.ForceInterleaveGD24 &&
+		!tales && ExtendedFormat == NOPE)
+	{
+		const uint32	nb = CalculatedSize >> 16;
+		const uint32	slot = LoROM ? 0xffc0 : 0x7fc0;
+		const uint32	k = slot >> 15;
+		const uint32	src = (((k & 1) ? (k >> 1) : nb + (k >> 1)) << 15) | (slot & 0x7fff);
+
+		if (nb == 0 || src + 0x40 > CalculatedSize || memcmp(ROM + src, RomHeader + (LoROM ? 0x7fc0 : 0xffc0), 0x40) != 0)
+			interleaved = FALSE;
+	}
+
+	// these games fail to be detected
 	if (!Settings.ForceHiROM && !Settings.ForceLoROM)
 	{
 		if (strncmp((char *) &ROM[0x7fc0], "YUYU NO QUIZ DE GO!GO!", 22) == 0 ||
-		   (strncmp((char *) &ROM[0xffc0], "BATMAN--REVENGE JOKER",  21) == 0))
+		   (strncmp((char *) &ROM[0xffc0], "BATMAN--REVENGE JOKER",  21) == 0) ||
+		   // LoROM betas whose map byte claims HiROM, so they read as interleaved
+		   (strncmp((char *) &ROM[0x7fc0], "DENNIS THE MENACE    ", 21) == 0 && ROM[0x7fd5] == 0x31) ||
+		   (strncmp((char *) &ROM[0x7fc0], "POPN TWINBEE         ", 21) == 0 && ROM[0x7fd5] == 0x21))
 		{
 			LoROM = TRUE;
 			HiROM = FALSE;
