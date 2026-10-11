@@ -23,6 +23,8 @@
 // A23 set and A17/A18 clear, and reads it back there bit-permuted (bits
 // 0,6,7,1,2,3,4,5). MAME decodes A16 too, but Digimon talks to it at $81/$89:40xx.
 // Marvel Super Heroes vs. Street Fighter has the same latch on A22: $40-$7D:8000+.
+//
+// Soul Blade / Hercules (MAME lorom_sbld) read 55,0F,AA,F0 by A1-A0 in $80-$BF:8000+.
 
 #include "snes9x.h"
 #include "memmap.h"
@@ -98,6 +100,8 @@ static int DetectKind (uint8 *rom, uint32 size)
 		const uint32	crc = Crc32(rom, size);
 		if (crc == 0xCDB590E4)		// Marvel Super Heroes vs. Street Fighter
 			return (CARTPROT_BITSWAP40);
+		if (crc == 0xC97D1D7B || crc == 0x45874D3D)		// Soul Blade, Hercules
+			return (CARTPROT_SOULBLADE);
 		for (uint32 i = 0; i < sizeof(kBitswapCarts) / sizeof(kBitswapCarts[0]); i++)
 			if (crc == kBitswapCarts[i])
 			{
@@ -221,6 +225,9 @@ void S9xCartProtWrite (uint32 address, uint8 data)
 		return;
 	}
 
+	if (ProtKind == CARTPROT_SOULBLADE)
+		return;
+
 	if (ProtKind == CARTPROT_BITSWAP)
 	{
 		if (BankOverlay && (address & 0xC08000) == 0xC08000)
@@ -268,6 +275,12 @@ void S9xCartProtWrite (uint32 address, uint8 data)
 // code runs out of $8100-$820A.
 uint8 S9xCartProtRead (uint32 address)
 {
+	if (ProtKind == CARTPROT_SOULBLADE)
+	{
+		static const uint8	kSequence[4] = { 0x55, 0x0F, 0xAA, 0xF0 };
+		return ((address & 0x400000) ? OpenBus : kSequence[address & 3]);
+	}
+
 	if (ProtKind == CARTPROT_BITSWAP || ProtKind == CARTPROT_BITSWAP40)
 	{
 		if (ProtKind == CARTPROT_BITSWAP && BitswapPassThrough(address))

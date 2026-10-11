@@ -7,7 +7,8 @@ enum
 	CARTPROT_TEKKEN2,		// "Tekken 2" / Street Fighter EX command chip at $80-$BF:$8000
 	CARTPROT_BUGSLIFE,		// "A Bug's Life" XOR ports at $xx:6000-$6FFF
 	CARTPROT_BITSWAP,		// "Pocket Monster" family: latch read back bit-permuted in banks $80/$81/$88/$89/..
-	CARTPROT_BITSWAP40		// the same latch at $40-$7D:8000-$FFFF (Marvel Super Heroes vs. Street Fighter)
+	CARTPROT_BITSWAP40,		// the same latch at $40-$7D:8000-$FFFF (Marvel Super Heroes vs. Street Fighter)
+	CARTPROT_SOULBLADE		// Soul Blade / Hercules: $80-$BF:8000+ read 55,0F,AA,F0; $C0-$FF open bus
 };
 
 // Security chips found on unlicensed LoROM carts.

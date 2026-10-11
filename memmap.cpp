@@ -4719,6 +4719,15 @@ void CMemory::map_CartProt (void)
 		return;
 	}
 
+	if (S9xCartProtKind() == CARTPROT_SOULBLADE)
+	{
+		// the chip answers the ROM half of $80-$BF; nothing drives $C0-$FF
+		for (uint32 bank = 0x80; bank <= 0xff; bank++)
+			for (uint32 block = (bank < 0xc0) ? 8 : 0; block < 16; block++)
+				Map[(bank << 4) | block] = (uint8 *) MAP_CARTPROT;
+		return;
+	}
+
 	if (S9xCartProtKind() == CARTPROT_BUGSLIFE)
 	{
 		// A Bug's Life: ports at $6000-$6FFF of the system banks, unmapped on LoROM
