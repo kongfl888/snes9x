@@ -1395,6 +1395,14 @@ void S9xFreezeToStream (STREAM stream)
 		delete [] hgb_buf;
 	}
 
+	// Unlicensed cart chips and multicart banking (they remap ROM), as "CPT".
+	if (Settings.CartProtection)
+	{
+		uint8	cpt_buf[64];
+		S9xCartProtStateSave(cpt_buf);
+		FreezeBlock(stream, "CPT", cpt_buf, (int) S9xCartProtStateSize());
+	}
+
 	// SGB BIOS mode: piggyback the GB/SGB blob inside the SNES snapshot.
 	// The blob is self-versioning ("SGB!" magic + version + size); we just
 	// hand the raw bytes to FreezeBlock. Without this, BIOS-mode loads
@@ -1526,6 +1534,8 @@ int S9xUnfreezeFromStream (STREAM stream)
 	int		local_upd_size       = 0;
 	uint8	*local_hgb_data      = NULL;
 	int		local_hgb_size       = 0;
+	uint8	local_cpt_data[64];
+	int		local_cpt_size       = 0;
 	uint8	*local_gbe_data      = NULL;
 	int		local_gbe_size       = 0;
 	uint8	*local_screenshot    = NULL;
@@ -1781,6 +1791,18 @@ int S9xUnfreezeFromStream (STREAM stream)
 			}
 		}
 
+		// Optional cart-chip blob, likewise.
+		{
+			int cpt_block_len = 0;
+			if (CheckBlockName(stream, "CPT", cpt_block_len) && cpt_block_len > 0 && cpt_block_len <= (int) sizeof(local_cpt_data))
+			{
+				result = UnfreezeBlock(stream, "CPT", local_cpt_data, cpt_block_len);
+				if (result != SUCCESS)
+					break;
+				local_cpt_size = cpt_block_len;
+			}
+		}
+
 		// Optional GB/SGB blob — present iff the snapshot was taken in
 		// BIOS mode (Settings.SGB_BIOSModeActive). Old snapshots and
 		// non-SGB SNES games omit it. CheckBlockName peeks without
@@ -1910,6 +1932,9 @@ int S9xUnfreezeFromStream (STREAM stream)
 			S9xMessage(S9X_WARNING, S9X_FREEZE_FILE_INFO, "This state was saved with the Cx4 data ROM; set it in the BIOS Manager.");
 		if (!local_hgb_data || !S9xHG51BStateLoad(local_hgb_data, (uint32) local_hgb_size))
 			S9xHG51BSuspend();
+
+		if (Settings.CartProtection && local_cpt_size)
+			S9xCartProtStateLoad(local_cpt_data, (uint32) local_cpt_size);
 
 		if (local_fillram)
 			memcpy(Memory.FillRAM, local_fillram, 0x8000);

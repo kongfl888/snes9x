@@ -4719,6 +4719,10 @@ void CMemory::map_CartProt (void)
 		return;
 	}
 
+	// Super 20 Hab remaps ROM itself (S9xCartProtReset selects the menu bank)
+	if (S9xCartProtKind() == CARTPROT_SUPER20)
+		return;
+
 	if (S9xCartProtKind() == CARTPROT_SOULBLADE)
 	{
 		// the chip answers the ROM half of $80-$BF; nothing drives $C0-$FF

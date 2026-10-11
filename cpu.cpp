@@ -133,10 +133,10 @@ void S9xReset (void)
 		S9xPF94LoadGames();
 		S9xPF94Reset();
 	}
+	S9xCartProtReset();
 	S9xResetCPU();
 	S9xResetPPU();
 	S9xResetDMA();
-	S9xCartProtReset();
 	S9xResetAPU();
     S9xResetMSU();
 	S9xVoiceKunStop();
@@ -288,10 +288,10 @@ void S9xSoftReset (void)
 	if (PF94.active)
 		S9xPF94Reset();
 
+	S9xCartProtReset();
 	S9xSoftResetCPU();
 	S9xSoftResetPPU();
 	S9xResetDMA();
-	S9xCartProtReset();
 	S9xSoftResetAPU();
     S9xResetMSU();
 	S9xVoiceKunStop();
