@@ -1411,10 +1411,34 @@ int S9xGBBootPolicyGroup (int policy)
 	}
 }
 
+// First opcode at a candidate header's reset vector (bsnes / Mesen heuristic):
+// decides images whose two header slots hold the same bytes.
+static int ResetOpcodeScore (const uint8 *rom, uint32 bank_base, const uint8 *header)
+{
+	const uint16	reset = header[0xfc] | (header[0xfd] << 8);
+	if (reset < 0x8000)
+		return (0);
+
+	switch (rom[bank_base + (reset & 0x7fff)])
+	{
+		case 0x78: case 0x18: case 0x38: case 0x9c: case 0x4c: case 0x5c:
+			return (16);	// sei, clc, sec, stz, jmp, jml
+		case 0xc2: case 0xe2: case 0xad: case 0xae: case 0xac: case 0xaf:
+		case 0xa9: case 0xa2: case 0xa0: case 0x20: case 0x22:
+			return (8);		// rep, sep, loads, jsr, jsl
+		case 0x40: case 0x60: case 0x6b: case 0xcd: case 0xec: case 0xcc:
+			return (-8);	// rti, rts, rtl, compares
+		case 0x00: case 0x02: case 0xdb: case 0x42: case 0xff:
+			return (-16);	// brk, cop, stp, wdm, sbc long,x
+	}
+
+	return (0);
+}
+
 int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
 {
 	uint8	*buf = ROM + 0xff00 + romoff + (skip_header ? 0x200 : 0);
-	int		score = 0;
+	int		score = ResetOpcodeScore(ROM, 0x8000 + romoff + (skip_header ? 0x200 : 0), buf);
 
 	// Check for extended HiROM expansion used in Mother 2 Deluxe et al.
 	// Looks for size byte 13 (8MB) and an actual ROM size greater than 4MB
@@ -1468,7 +1492,7 @@ int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
 int CMemory::ScoreLoROM (bool8 skip_header, int32 romoff)
 {
 	uint8	*buf = ROM + 0x7f00 + romoff + (skip_header ? 0x200 : 0);
-	int		score = 0;
+	int		score = ResetOpcodeScore(ROM, romoff + (skip_header ? 0x200 : 0), buf);
 
 	if (!(buf[0xd5] & 0x1))
 		score += 3;
