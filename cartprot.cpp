@@ -14,6 +14,10 @@
 // row-3 entries the game asks for are pinned by the pointer compare and by
 // the character slots. Entries the game has not been seen to ask for are
 // extrapolated from the same rules.
+//
+// "A Bug's Life" (Pirate) checks ports at $xx:6000-$6FFF instead ($00:CAC0):
+// $60xx clears, $62/64/66/68xx XOR into four nibbles, $61/63/65/67xx read them
+// and $6Fxx reads all four XORed. Model derived from the game's $E compare.
 
 #include "snes9x.h"
 #include "memmap.h"
@@ -24,6 +28,7 @@ extern uint8	OpenBus;
 struct SCartProt	CartProt;
 
 static uint8	*ProtRomBase[0x40];
+static int		ProtKind = CARTPROT_NONE;
 
 // answer[(command << 4) | argument]
 static const uint8	kAnswer[64] =
@@ -44,7 +49,7 @@ static const uint8	kAnswer[64] =
 
 // The protocol routines at $00:B5DF (write a burst) and $00:B693 (read the
 // answer) are the signature; the blank header alone is not specific enough.
-bool8 S9xCartProtDetect (uint8 *rom, uint32 size)
+static int DetectKind (uint8 *rom, uint32 size)
 {
 	static const uint8	kBurst[] = { 0x08, 0xA0, 0x00, 0x00, 0xAE, 0x1A, 0x03, 0xA9, 0x0F, 0x00, 0x97, 0x16 };
 	static const uint8	kFetch[] = { 0x08, 0xA0, 0x00, 0x01, 0xA2, 0x00, 0x01, 0xB7, 0x16, 0x8D, 0x74, 0x02 };
@@ -53,7 +58,13 @@ bool8 S9xCartProtDetect (uint8 *rom, uint32 size)
 	// 2-in-1 carries the same code twice but needs a multicart mapper it
 	// does not have, and its banks $80-$BF hold real ROM - leave it alone.
 	if (size != 0x200000)
-		return (FALSE);
+		return (CARTPROT_NONE);
+
+	// A Bug's Life: PHB/PHA, LDX #$5F55, DB=$38, then $AA to the $6055 clear port
+	static const uint8	kBugsClear[] = { 0x8B, 0x48, 0xA2, 0x55, 0x5F, 0xA9, 0x38, 0x48, 0xAB, 0xA9, 0xAA, 0x9D, 0x00, 0x01 };
+
+	if (memcmp(rom + 0x4AC0, kBugsClear, sizeof(kBugsClear)) == 0)
+		return (CARTPROT_BUGSLIFE);
 
 	// Street Fighter EX / EX Plus Alpha (Pirate) drives the same chip from bank
 	// $01 with direct page $86 and registers $0100/$0102/$0104.
@@ -62,16 +73,62 @@ bool8 S9xCartProtDetect (uint8 *rom, uint32 size)
 
 	if (memcmp(rom + 0xCFBB, kSfexBurst, sizeof(kSfexBurst)) == 0 &&
 	    memcmp(rom + 0xD071, kSfexFetch, sizeof(kSfexFetch)) == 0)
-		return (TRUE);
+		return (CARTPROT_TEKKEN2);
 
-	return (memcmp(rom + 0x35DF, kBurst, sizeof(kBurst)) == 0 &&
-	        memcmp(rom + 0x3693, kFetch, sizeof(kFetch)) == 0);
+	if (memcmp(rom + 0x35DF, kBurst, sizeof(kBurst)) == 0 &&
+	    memcmp(rom + 0x3693, kFetch, sizeof(kFetch)) == 0)
+		return (CARTPROT_TEKKEN2);
+
+	return (CARTPROT_NONE);
+}
+
+bool8 S9xCartProtDetect (uint8 *rom, uint32 size)
+{
+	ProtKind = DetectKind(rom, size);
+	return (ProtKind != CARTPROT_NONE);
+}
+
+int S9xCartProtKind (void)
+{
+	return (ProtKind);
 }
 
 void S9xCartProtReset (void)
 {
 	memset(&CartProt, 0, sizeof(CartProt));
 	CartProt.Answer = kAnswer[0];
+}
+
+// A Bug's Life: the chip decodes A11-A8 of $6000-$6FFF only.
+static void BugsLifeWrite (uint32 address, uint8 data)
+{
+	switch ((address >> 8) & 0xF)
+	{
+		case 0x0:	memset(CartProt.Xor, 0, sizeof(CartProt.Xor));	break;
+		case 0x2:	CartProt.Xor[0] ^= data & 0xF;	break;
+		case 0x4:	CartProt.Xor[1] ^= data & 0xF;	break;
+		case 0x6:	CartProt.Xor[2] ^= data & 0xF;	break;
+		case 0x8:	CartProt.Xor[3] ^= data & 0xF;	break;
+		default:	break;
+	}
+}
+
+// Only D0-D3 are driven; the upper nibble floats.
+static uint8 BugsLifeRead (uint32 address)
+{
+	uint8	v;
+
+	switch ((address >> 8) & 0xF)
+	{
+		case 0x1:	v = CartProt.Xor[0];	break;
+		case 0x3:	v = CartProt.Xor[1];	break;
+		case 0x5:	v = CartProt.Xor[2];	break;
+		case 0x7:	v = CartProt.Xor[3];	break;
+		case 0xF:	v = CartProt.Xor[0] ^ CartProt.Xor[1] ^ CartProt.Xor[2] ^ CartProt.Xor[3];	break;
+		default:	return (OpenBus);
+	}
+
+	return ((OpenBus & 0xF0) | v);
 }
 
 void S9xCartProtSetRomBase (uint32 bank, uint8 *base)
@@ -81,8 +138,15 @@ void S9xCartProtSetRomBase (uint32 bank, uint8 *base)
 }
 
 // Every write the cart window sees; only $8000-$87FF means anything.
-void S9xCartProtWrite (uint32 address)
+void S9xCartProtWrite (uint32 address, uint8 data)
 {
+	if (ProtKind == CARTPROT_BUGSLIFE)
+	{
+		if ((address & 0xF000) == 0x6000)
+			BugsLifeWrite(address, data);
+		return;
+	}
+
 	if ((address & 0xF800) != 0x8000)
 		return;
 
@@ -111,6 +175,9 @@ void S9xCartProtWrite (uint32 address)
 // code runs out of $8100-$820A.
 uint8 S9xCartProtRead (uint32 address)
 {
+	if (ProtKind == CARTPROT_BUGSLIFE)
+		return (((address & 0xF000) == 0x6000) ? BugsLifeRead(address) : OpenBus);
+
 	if (CartProt.Armed && (address & 0xFF00) == 0x8100)
 		return (CartProt.Answer);
 

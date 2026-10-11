@@ -4652,6 +4652,15 @@ void CMemory::Map_Initialize (void)
 // never executes out of $80-$BF, so routing that window costs nothing.
 void CMemory::map_CartProt (void)
 {
+	if (S9xCartProtKind() == CARTPROT_BUGSLIFE)
+	{
+		// A Bug's Life: ports at $6000-$6FFF of the system banks, unmapped on LoROM
+		for (uint32 bank = 0x00; bank <= 0xbf; bank++)
+			if (bank < 0x40 || bank >= 0x80)
+				Map[(bank << 4) | 6] = (uint8 *) MAP_CARTPROT;
+		return;
+	}
+
 	for (uint32 bank = 0x80; bank <= 0xbf; bank++)
 	{
 		const uint32	block = (bank << 4) | 8;
