@@ -1411,10 +1411,34 @@ int S9xGBBootPolicyGroup (int policy)
 	}
 }
 
+// First opcode at a candidate header's reset vector (bsnes / Mesen heuristic):
+// decides images whose two header slots hold the same bytes.
+static int ResetOpcodeScore (const uint8 *rom, uint32 bank_base, const uint8 *header)
+{
+	const uint16	reset = header[0xfc] | (header[0xfd] << 8);
+	if (reset < 0x8000)
+		return (0);
+
+	switch (rom[bank_base + (reset & 0x7fff)])
+	{
+		case 0x78: case 0x18: case 0x38: case 0x9c: case 0x4c: case 0x5c:
+			return (16);	// sei, clc, sec, stz, jmp, jml
+		case 0xc2: case 0xe2: case 0xad: case 0xae: case 0xac: case 0xaf:
+		case 0xa9: case 0xa2: case 0xa0: case 0x20: case 0x22:
+			return (8);		// rep, sep, loads, jsr, jsl
+		case 0x40: case 0x60: case 0x6b: case 0xcd: case 0xec: case 0xcc:
+			return (-8);	// rti, rts, rtl, compares
+		case 0x00: case 0x02: case 0xdb: case 0x42: case 0xff:
+			return (-16);	// brk, cop, stp, wdm, sbc long,x
+	}
+
+	return (0);
+}
+
 int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
 {
 	uint8	*buf = ROM + 0xff00 + romoff + (skip_header ? 0x200 : 0);
-	int		score = 0;
+	int		score = ResetOpcodeScore(ROM, 0x8000 + romoff + (skip_header ? 0x200 : 0), buf);
 
 	// Check for extended HiROM expansion used in Mother 2 Deluxe et al.
 	// Looks for size byte 13 (8MB) and an actual ROM size greater than 4MB
@@ -1468,7 +1492,7 @@ int CMemory::ScoreHiROM (bool8 skip_header, int32 romoff)
 int CMemory::ScoreLoROM (bool8 skip_header, int32 romoff)
 {
 	uint8	*buf = ROM + 0x7f00 + romoff + (skip_header ? 0x200 : 0);
-	int		score = 0;
+	int		score = ResetOpcodeScore(ROM, romoff + (skip_header ? 0x200 : 0), buf);
 
 	if (!(buf[0xd5] & 0x1))
 		score += 3;
@@ -2565,6 +2589,24 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 	}
 	const bool8	superdisc = S9xSuperDiscIsBIOS(ROM, (uint32) ROMfillSize);
 
+	// A LoROM cart read through HiROM addressing doubles every 32K bank, and such
+	// overdumps often repeat whole: fold them back to the cart image first.
+	if (ROMfillSize >= 0x100000 && (ROMfillSize & 0xFFFF) == 0 && !superdisc)
+	{
+		bool8	doubled = TRUE;
+		for (int32 i = 0; doubled && i < ROMfillSize; i += 0x10000)
+			doubled = memcmp(ROM + i, ROM + i + 0x8000, 0x8000) == 0;
+
+		if (doubled)
+		{
+			for (int32 i = 0; i < ROMfillSize / 2; i += 0x8000)
+				memmove(ROM + i, ROM + i * 2, 0x8000);
+			ROMfillSize /= 2;
+			while (ROMfillSize > 0x100000 && memcmp(ROM, ROM + ROMfillSize / 2, ROMfillSize / 2) == 0)
+				ROMfillSize /= 2;
+		}
+	}
+
 	int	hi_score, lo_score;
 	int score_headered;
 	int score_nonheadered;
@@ -2580,7 +2622,9 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 
 	bool headered_score_highest = score_headered > score_nonheadered;
 
-	if (HeaderCount == 0 && !Settings.ForceNoHeader && headered_score_highest && !superdisc)
+	// An exact multiple of 8K has no room for a 512-byte copier header (blank-header betas)
+	if (HeaderCount == 0 && !Settings.ForceNoHeader && headered_score_highest && !superdisc &&
+		(ROMfillSize & 0x1FFF) != 0)
 	{
 		memmove(ROM, ROM + 512, ROMfillSize - 512);
 		ROMfillSize -= 512;
@@ -2660,8 +2704,12 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 					break;
 
 				case 5:
-					interleaved = TRUE;
-					tales = TRUE;
+					// Tales-style swapped ExHiROM needs >4MB; smaller carts just carry the byte
+					if (CalculatedSize > 0x400000)
+					{
+						interleaved = TRUE;
+						tales = TRUE;
+					}
 					break;
 			}
 		}
@@ -2683,11 +2731,28 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 		}
 	}
 
-	// this two games fail to be detected
+	// A type-1 de-interleave must move this header into the other mapping's slot,
+	// or the map byte lied (Killer Instinct (USA) (Beta): HiROM image, LoROM byte).
+	if (interleaved && !Settings.ForceInterleaved && !Settings.ForceInterleaved2 && !Settings.ForceInterleaveGD24 &&
+		!tales && ExtendedFormat == NOPE)
+	{
+		const uint32	nb = CalculatedSize >> 16;
+		const uint32	slot = LoROM ? 0xffc0 : 0x7fc0;
+		const uint32	k = slot >> 15;
+		const uint32	src = (((k & 1) ? (k >> 1) : nb + (k >> 1)) << 15) | (slot & 0x7fff);
+
+		if (nb == 0 || src + 0x40 > CalculatedSize || memcmp(ROM + src, RomHeader + (LoROM ? 0x7fc0 : 0xffc0), 0x40) != 0)
+			interleaved = FALSE;
+	}
+
+	// these games fail to be detected
 	if (!Settings.ForceHiROM && !Settings.ForceLoROM)
 	{
 		if (strncmp((char *) &ROM[0x7fc0], "YUYU NO QUIZ DE GO!GO!", 22) == 0 ||
-		   (strncmp((char *) &ROM[0xffc0], "BATMAN--REVENGE JOKER",  21) == 0))
+		   (strncmp((char *) &ROM[0xffc0], "BATMAN--REVENGE JOKER",  21) == 0) ||
+		   // LoROM betas whose map byte claims HiROM, so they read as interleaved
+		   (strncmp((char *) &ROM[0x7fc0], "DENNIS THE MENACE    ", 21) == 0 && ROM[0x7fd5] == 0x31) ||
+		   (strncmp((char *) &ROM[0x7fc0], "POPN TWINBEE         ", 21) == 0 && ROM[0x7fd5] == 0x21))
 		{
 			LoROM = TRUE;
 			HiROM = FALSE;
@@ -3771,6 +3836,9 @@ void CMemory::ParseSNESHeader (uint8 *RomHeader)
 		ROMSize = RomHeader[0x27];
 
 	SRAMSize  = bs ? 5 /* BS-X */    : RomHeader[0x28];
+	// Past 512K (SRAM_SIZE) the byte is garbage, e.g. an FFh proto header; 256K as Mesen
+	if (SRAMSize > 9)
+		SRAMSize = 8;
 	ROMSpeed  = bs ? RomHeader[0x28] : RomHeader[0x25];
 	ROMType   = bs ? 0xE5 /* BS-X */ : RomHeader[0x26];
 	ROMRegion = bs ? 0               : RomHeader[0x29];
@@ -4643,6 +4711,53 @@ void CMemory::Map_Initialize (void)
 // never executes out of $80-$BF, so routing that window costs nothing.
 void CMemory::map_CartProt (void)
 {
+	if (S9xCartProtKind() == CARTPROT_BITSWAP)
+	{
+		// the latch decodes A23 with A17/A18 low: the ROM half of those banks, plus the
+		// $4000-$41FF window the CPU leaves to the cart (registers are passed through)
+		for (uint32 bank = 0x80; bank <= 0xff; bank++)
+		{
+			if (bank & 0x06)
+				continue;
+			for (uint32 block = 8; block < 16; block++)
+				Map[(bank << 4) | block] = (uint8 *) MAP_CARTPROT;
+			if (bank < 0xc0)
+				Map[(bank << 4) | 4] = WriteMap[(bank << 4) | 4] = (uint8 *) MAP_CARTPROT;
+		}
+		return;
+	}
+
+	if (S9xCartProtKind() == CARTPROT_BITSWAP40)
+	{
+		// this board decodes A22 instead: the ROM half of $40-$7D (it uses $40, $46 and $4E)
+		for (uint32 bank = 0x40; bank < 0x7e; bank++)
+			for (uint32 block = 8; block < 16; block++)
+				Map[(bank << 4) | block] = (uint8 *) MAP_CARTPROT;
+		return;
+	}
+
+	// Super 20 Hab remaps ROM itself (S9xCartProtReset selects the menu bank)
+	if (S9xCartProtKind() == CARTPROT_SUPER20)
+		return;
+
+	if (S9xCartProtKind() == CARTPROT_SOULBLADE)
+	{
+		// the chip answers the ROM half of $80-$BF; nothing drives $C0-$FF
+		for (uint32 bank = 0x80; bank <= 0xff; bank++)
+			for (uint32 block = (bank < 0xc0) ? 8 : 0; block < 16; block++)
+				Map[(bank << 4) | block] = (uint8 *) MAP_CARTPROT;
+		return;
+	}
+
+	if (S9xCartProtKind() == CARTPROT_BUGSLIFE)
+	{
+		// A Bug's Life: ports at $6000-$6FFF of the system banks, unmapped on LoROM
+		for (uint32 bank = 0x00; bank <= 0xbf; bank++)
+			if (bank < 0x40 || bank >= 0x80)
+				Map[(bank << 4) | 6] = (uint8 *) MAP_CARTPROT;
+		return;
+	}
+
 	for (uint32 bank = 0x80; bank <= 0xbf; bank++)
 	{
 		const uint32	block = (bank << 4) | 8;
@@ -5952,6 +6067,25 @@ static const struct
 	{ 0xB56EC084, "Rin Kaihou Kudan no Igo Taidou (J)" },
 };
 
+// Super Ice Hockey (E): RNG at C0:9C85 is s = rotl(s) + both pads, and the
+// pick-again loop at C2:2E8D never re-reads the pads, so a fixed point hangs it.
+static const uint8	kIceHockeyCheck[] =
+{
+	0x08, 0xC2, 0x30, 0x48,				// PHP / REP #$30 / PHA
+	0xAD, 0x96, 0x14, 0xEB,				// LDA $1496 / XBA
+	0x29, 0x03, 0x00, 0xF0, 0x05,		// AND #$0003 / BEQ set
+	0xC9, 0x03, 0x00, 0xD0, 0x01,		// CMP #$0003 / BNE go
+	0x38,								// set: SEC (bits 9-8 equal)
+	0xAD, 0x96, 0x14, 0x2A,				// go: LDA $1496 / ROL
+	0x18, 0x6D, 0x48, 0x10,				// CLC / ADC $1048 (pad 1)
+	0x18, 0x6D, 0x4A, 0x10,				// CLC / ADC $104A (pad 2)
+	0xCD, 0x96, 0x14, 0xD0, 0x03,		// CMP $1496 / BNE done
+	0xEE, 0x96, 0x14,					// INC $1496 - off the fixed point
+	0x68, 0x28,							// done: PLA / PLP
+	0x82, 0x00, 0x00					// BRL $2E8D (offset filled in)
+};
+static uint8	IceHockeyBankC2[0x10000];
+
 void CMemory::ApplyROMFixes (void)
 {
 	Settings.BlockInvalidVRAMAccess = Settings.BlockInvalidVRAMAccessMaster;
@@ -5959,11 +6093,52 @@ void CMemory::ApplyROMFixes (void)
 
 	// Astro Hawk (PD): enables NMI before clearing WRAM, so the NMI handler
 	// runs on power-on garbage; only boots if WRAM starts zeroed. CRC match —
-	// its internal header is blank.
-	if (ROMCRC32 == 0x41D59381)
+	// its internal header is blank. Cute Angela (Unl): its NMI DMA queue end
+	// ($1175) is never cleared, and $5555 fires thousands of garbage DMAs.
+	if (ROMCRC32 == 0x41D59381 || ROMCRC32 == 0x30A73CE4)
 	{
 		SNESGameFixes.RAMInitialValue = 0x00;
 		printf("Applied zeroed-WRAM hack.\n");
+	}
+
+	// Gamars Puzzle (Unl): a LoROM board with its battery RAM at $30-$3F:6000,
+	// HiROM-style; the boot loops until the signature it writes at $31:6000 sticks.
+	if (ROMCRC32 == 0xF36B620D && !HiROM && SRAMSize)
+	{
+		map_HiROMSRAM();
+		for (uint32 c = 0x20; c <= 0xbf; c++)
+			if (c < 0x40 || c >= 0xa0)
+				WriteMap[(c << 4) | 6] = Map[(c << 4) | 6], WriteMap[(c << 4) | 7] = Map[(c << 4) | 7];
+	}
+
+	// Super Ice Hockey (Europe): its retry BRL at C2:3015 goes through
+	// kIceHockeyCheck in unused C2:0330. Bank C2 runs from a patched copy, so
+	// Memory.ROM, its CRC and the RetroAchievements hash stay the original.
+	if (ROMCRC32 == 0xFB1D16C4 && HiROM && CalculatedSize == 0x100000)
+	{
+		static const uint8	kRetry[] = { 0xD0, 0x03, 0x82, 0x75, 0xFE };	// BNE +3 / BRL $2E8D
+		const uint8			*bank = ROM + 0x20000;
+		const uint32		cave = 0x0330, end = cave + sizeof(kIceHockeyCheck);
+		bool8				free_cave = TRUE;
+
+		for (uint32 i = cave; i < end; i++)
+			free_cave &= bank[i] == 0;
+
+		if (free_cave && memcmp(bank + 0x3013, kRetry, sizeof(kRetry)) == 0)
+		{
+			memcpy(IceHockeyBankC2, bank, sizeof(IceHockeyBankC2));
+			memcpy(IceHockeyBankC2 + cave, kIceHockeyCheck, sizeof(kIceHockeyCheck));
+			WRITE_WORD(IceHockeyBankC2 + end - 2, (uint16) (0x2E8D - end));
+			WRITE_WORD(IceHockeyBankC2 + 0x3016, (uint16) (cave - 0x3018));
+
+			for (uint32 b = 0; b < 16; b++)
+			{
+				Map[(0xC2 << 4) | b] = IceHockeyBankC2;
+				Map[(0x42 << 4) | b] = IceHockeyBankC2;
+			}
+
+			printf("Applied Super Ice Hockey RNG fix.\n");
+		}
 	}
 
 	// Games that upload graphics to VRAM with the screen still on. Blocking
@@ -6022,7 +6197,8 @@ void CMemory::ApplyROMFixes (void)
 		match_na("SATAN IS OUR FATHER!") ||
 		match_na("S.F.S.95 della SerieA") ||
 		match_id("AACJ") || // Nichibutsu Arcade Classics
-		match_na("goemon 4"))               // Ganbare Goemon Kirakira Douchuu
+		match_na("goemon 4") ||             // Ganbare Goemon Kirakira Douchuu
+		ROMCRC32 == 0x65CE3729)             // Power Slide (Europe) (Proto): reads GSU RAM before writing it
 		SNESGameFixes.SRAMInitialValue = 0x00;
 
 	// Additional game fixes by sanmaiwashi ...

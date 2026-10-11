@@ -516,7 +516,7 @@ inline void S9xSetByte (uint8 Byte, uint32 Address)
 		case CMemory::MAP_CARTPROT:
 		case CMemory::MAP_NONE:
 			if (Settings.CartProtection)
-				S9xCartProtWrite(Address & 0xffff);
+				S9xCartProtWrite(Address & 0xffffff, Byte);
 			addCyclesInMemoryAccess;
 			return;
 
@@ -873,8 +873,8 @@ inline void S9xSetWord (uint16 Word, uint32 Address, enum s9xwrap_t w = WRAP_NON
 		case CMemory::MAP_NONE:
 			if (Settings.CartProtection)
 			{
-				S9xCartProtWrite(Address & 0xffff);
-				S9xCartProtWrite((Address + 1) & 0xffff);
+				S9xCartProtWrite(Address & 0xffffff, (uint8) Word);
+				S9xCartProtWrite((Address + 1) & 0xffffff, (uint8) (Word >> 8));
 			}
 			addCyclesInMemoryAccess_x2;
 			return;
