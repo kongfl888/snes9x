@@ -2660,8 +2660,12 @@ bool8 CMemory::LoadROMInt (int32 ROMfillSize)
 					break;
 
 				case 5:
-					interleaved = TRUE;
-					tales = TRUE;
+					// Tales-style swapped ExHiROM needs >4MB; smaller carts just carry the byte
+					if (CalculatedSize > 0x400000)
+					{
+						interleaved = TRUE;
+						tales = TRUE;
+					}
 					break;
 			}
 		}
