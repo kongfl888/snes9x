@@ -6084,6 +6084,16 @@ void CMemory::ApplyROMFixes (void)
 		printf("Applied zeroed-WRAM hack.\n");
 	}
 
+	// Gamars Puzzle (Unl): a LoROM board with its battery RAM at $30-$3F:6000,
+	// HiROM-style; the boot loops until the signature it writes at $31:6000 sticks.
+	if (ROMCRC32 == 0xF36B620D && !HiROM && SRAMSize)
+	{
+		map_HiROMSRAM();
+		for (uint32 c = 0x20; c <= 0xbf; c++)
+			if (c < 0x40 || c >= 0xa0)
+				WriteMap[(c << 4) | 6] = Map[(c << 4) | 6], WriteMap[(c << 4) | 7] = Map[(c << 4) | 7];
+	}
+
 	// Super Ice Hockey (Europe): its retry BRL at C2:3015 goes through
 	// kIceHockeyCheck in unused C2:0330. Bank C2 runs from a patched copy, so
 	// Memory.ROM, its CRC and the RetroAchievements hash stay the original.
