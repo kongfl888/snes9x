@@ -408,6 +408,7 @@ struct SSettings
 	uint32	SFCBoxKeyswitch; // SFC-Box keyswitch at power-on, as SFCBox.Keyswitch (1 = ON); ports must seed it
 	bool8	RP2040Cart;     // RP2040 game cart (Xeno Crisis) with its firmware loaded, streaming through $3000
 	uint32	SFCBoxKROMVersion; // SFC-Box supervisor BIOS: 1 = KROM 1.00, 2 = KROM 2.00 (when the KROM file holds it); ports must seed it
+	bool8	BilinearMode7;  // smooth Mode 7 by blending the 4 texels around each sample point (display only, not hardware)
 };
 
 struct SSNESGameFixes

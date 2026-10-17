@@ -897,6 +897,7 @@ void WinRegisterConfigItems()
 #undef CATEGORY
 #define CATEGORY "Display"
 	AddBool2("Transparency", Settings.Transparency, true);
+	AddBoolC("BilinearMode7", Settings.BilinearMode7, false, "true to smooth Mode 7 backgrounds (F-Zero, Super Mario Kart, Pilotwings) by blending neighbouring texels; a real SNES doesn't");
 	AddBoolC("MessagesInImage", Settings.AutoDisplayMessages, false, "true to draw text inside the SNES image (will get into AVIs, screenshots, and filters)");
 	AddBool2C("FrameRate", Settings.DisplayFrameRate, false, "on to display the framerate (will be inaccurate if AutoMaxSkipFrames is too small)");
 	AddBoolC("DisplayInput", Settings.DisplayPressedKeys, false, "true to show which buttons are pressed");

@@ -194,6 +194,17 @@ struct retro_core_option_definition option_defs_us[] = {
       "disabled"
    },
    {
+      "snes9x_bilinear_mode7",
+      "Bilinear Mode 7",
+      "Smooth the rotated and scaled Mode 7 backgrounds (F-Zero, Super Mario Kart, Pilotwings) by blending neighbouring pixels. Sprites and other layers stay sharp. A real SNES draws them blocky.",
+      {
+         { "disabled", NULL },
+         { "enabled",  NULL },
+         { NULL, NULL},
+      },
+      "disabled"
+   },
+   {
       "snes9x_blargg",
       "Blargg NTSC Filter",
       "Apply a video filter to mimic various NTSC TV signals.",

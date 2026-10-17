@@ -16238,6 +16238,7 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
         CreateToolTip(IDC_HIRES, hDlg, TEXT("Support the hi-res mode that a few games use, otherwise render them in low-res"));
         CreateToolTip(IDC_HEIGHT_EXTEND, hDlg, TEXT("Display an extra 15 pixels at the bottom, which few games use. Also increases AVI output size from 256x224 to 256x240"));
         CreateToolTip(IDC_MESSAGES_IN_IMAGE, hDlg, TEXT("Draw text inside the SNES image (will get into AVIs, screenshots, and filters)"));
+        CreateToolTip(IDC_BILINEAR_MODE7, hDlg, TEXT("Smooth the rotated and scaled Mode 7 backgrounds (F-Zero, Super Mario Kart, Pilotwings) by blending neighbouring pixels. A real SNES draws them blocky"));
         CreateToolTip(IDC_WIDESCREEN, hDlg, TEXT("Apply the built-in widescreen patch to this game at the selected width. The patch is applied in memory only, and the game restarts. Available for supported games only"));
 		CreateToolTip(IDC_MESSAGES_SCALE, hDlg, TEXT("Try to scale messages with EPX instead of Simple, only works for 2x and 3x and when displaying after filters"));
 
@@ -16281,6 +16282,8 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
         EnableWindow(GetDlgItem(hDlg, IDC_TRANS), TRUE);
         if (Settings.Transparency)
             SendDlgItemMessage(hDlg, IDC_TRANS, BM_SETCHECK, (WPARAM)BST_CHECKED, 0);
+        if (Settings.BilinearMode7)
+            SendDlgItemMessage(hDlg, IDC_BILINEAR_MODE7, BM_SETCHECK, (WPARAM)BST_CHECKED, 0);
 
         if (GUI.BlendHiRes)
             SendDlgItemMessage(hDlg, IDC_HIRESBLEND, BM_SETCHECK, (WPARAM)BST_CHECKED, 0);
@@ -16768,6 +16771,7 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		case IDOK:
 			bool fullscreenWanted;
  			Settings.Transparency = IsDlgButtonChecked(hDlg, IDC_TRANS);
+			Settings.BilinearMode7 = IsDlgButtonChecked(hDlg, IDC_BILINEAR_MODE7) == BST_CHECKED;
 			Settings.BilinearFilter = (bool)(IsDlgButtonChecked(hDlg,IDC_BILINEAR)==BST_CHECKED);
 			Settings.ShowOverscan = IsDlgButtonChecked(hDlg, IDC_HEIGHT_EXTEND)!=0;
 			WinTakeWidescreenChoice(hDlg);

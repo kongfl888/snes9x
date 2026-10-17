@@ -30,5 +30,7 @@ namespace TileImpl {
 	template struct Renderers<DrawMode7BG1, Normal1x1>;
 	template struct Renderers<DrawMode7MosaicBG2, Normal1x1>;
 	template struct Renderers<DrawMode7BG2, Normal1x1>;
+	template struct Renderers<DrawMode7BilinearBG1, Normal1x1>;
+	template struct Renderers<DrawMode7BilinearBG2, Normal1x1>;
 
 } // namespace TileImpl

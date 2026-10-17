@@ -734,6 +734,7 @@ void Snes9xPreferences::move_settings_to_dialog()
     set_check("change_display_resolution", config->change_display_resolution);
     set_check("scale_to_fit",              config->scale_to_fit);
     set_check("transparency_effects",      Settings.Transparency);
+    set_check("bilinear_mode7",            Settings.BilinearMode7);
     // Only a game with a widescreen hack in the table is offered the choice:
     // None, then each width the table has for it.
     {
@@ -981,6 +982,7 @@ void Snes9xPreferences::get_settings_from_dialog()
     config->osd_size                  = get_spin("osd_size");
     config->scale_to_fit              = get_check("scale_to_fit");
     Settings.Transparency             = get_check("transparency_effects");
+    Settings.BilinearMode7            = get_check("bilinear_mode7");
     {
         const SWidescreenGame *rows[8];
         const int n = S9xWidescreenVariants(rows, 8);

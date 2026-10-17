@@ -292,6 +292,7 @@ void Snes9xController::updateSettings(EmuConfig *config)
 
     Settings.ShowOverscan = config->show_overscan;
     Settings.Transparency = config->transparency_effects;
+    Settings.BilinearMode7 = config->bilinear_mode7;
     blend_hires = config->blend_hires;
 
     S9xSetWidescreenDefaults(&Settings.Widescreen);

@@ -87,6 +87,11 @@ DisplayPanel::DisplayPanel(EmuApplication *app_)
         app->updateSettings();
     });
 
+    connect(checkBox_bilinear_mode7, &QCheckBox::clicked, [&](bool checked) {
+        app->config->bilinear_mode7 = checked;
+        app->updateSettings();
+    });
+
     connect(comboBox_widescreen, &QComboBox::activated, [&](int index) {
         const SWidescreenGame *rows[8];
         const int n = S9xWidescreenVariants(rows, 8);
@@ -303,6 +308,7 @@ void DisplayPanel::showEvent(QShowEvent *event)
     checkBox_overscan->setChecked(config->show_overscan);
     checkBox_transparency->setChecked(config->transparency_effects);
     checkBox_blend_hires->setChecked(config->blend_hires);
+    checkBox_bilinear_mode7->setChecked(config->bilinear_mode7);
     // Only a game with a widescreen hack in the table is offered the choice:
     // None, then each width the table has for it.
     {
