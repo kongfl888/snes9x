@@ -490,6 +490,7 @@ struct SCustomKeys {
 	SCustomKey SFCBoxTVGame;
 	SCustomKey SFCBoxMountEject[2];
 	SCustomKey SFCBoxPowerOff;       // keyswitch position 4 (added last: layout)
+	SCustomKey CopyScreenShot;       // screenshot to the clipboard
 };
 
 struct SCustomKeyExtra {
@@ -563,6 +564,7 @@ struct SCustomKeysExtra {
 	SCustomKeyExtra SFCBoxTVGame;
 	SCustomKeyExtra SFCBoxMountEject[2];
 	SCustomKeyExtra SFCBoxPowerOff;
+	SCustomKeyExtra CopyScreenShot;
 };
 
 struct SJoypad {

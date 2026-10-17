@@ -974,6 +974,73 @@ static void WinRequestScreenshot()
 		S9xDoScreenshot(IPPU.RenderedScreenWidth, IPPU.RenderedScreenHeight);
 }
 
+// The screenshot as a 24-bit DIB on the clipboard, at the size Save Screenshot writes.
+static bool8 WinScreenshotToClipboard(int width, int height)
+{
+	if (!GFX.Screen || width <= 0 || height <= 0)
+		return FALSE;
+
+	const int stride = (width * 3 + 3) & ~3;   // DIB rows are DWORD-aligned
+	HGLOBAL mem = GlobalAlloc(GMEM_MOVEABLE, sizeof(BITMAPINFOHEADER) + (SIZE_T)stride * height);
+	BITMAPINFOHEADER *bi = mem ? (BITMAPINFOHEADER *)GlobalLock(mem) : NULL;
+	if (!bi)
+	{
+		if (mem) GlobalFree(mem);
+		S9xMessage(S9X_ERROR, 0, "Failed to copy the screenshot.");
+		return FALSE;
+	}
+
+	ZeroMemory(bi, sizeof(*bi));
+	bi->biSize        = sizeof(*bi);
+	bi->biWidth       = width;
+	bi->biHeight      = height;   // bottom-up
+	bi->biPlanes      = 1;
+	bi->biBitCount    = 24;
+	bi->biCompression = BI_RGB;
+	bi->biSizeImage   = stride * height;
+
+	uint8 *rows = (uint8 *)(bi + 1);
+	for (int y = 0; y < height; y++)
+	{
+		const uint16 *src = GFX.Screen + y * GFX.RealPPL;
+		uint8 *dst = rows + (height - 1 - y) * stride;
+		for (int x = 0; x < width; x++)
+		{
+			uint32 r, g, b;
+			DECOMPOSE_PIXEL(src[x], r, g, b);
+			*dst++ = (uint8)((b << 3) | (b >> 2));
+			*dst++ = (uint8)((g << 3) | (g >> 2));
+			*dst++ = (uint8)((r << 3) | (r >> 2));
+		}
+	}
+	GlobalUnlock(mem);
+
+	bool ok = false;
+	if (OpenClipboard(GUI.hWnd))
+	{
+		EmptyClipboard();
+		ok = SetClipboardData(CF_DIB, mem) != NULL;   // the clipboard owns mem from here
+		CloseClipboard();
+	}
+	if (!ok)
+	{
+		GlobalFree(mem);
+		S9xMessage(S9X_ERROR, 0, "Failed to copy the screenshot.");
+		return FALSE;
+	}
+	S9xMessage(S9X_INFO, 0, "Screenshot copied to the clipboard");
+	return TRUE;
+}
+
+// Same moment as Save Screenshot (the frame's end, or now when paused); only the target differs.
+static void WinRequestClipboardScreenshot()
+{
+	if (Settings.StopEmulation)
+		return;
+	S9xScreenshotTarget = WinScreenshotToClipboard;
+	WinRequestScreenshot();
+}
+
 // SFC-Box keyswitch rows follow the physical panel left-to-right; values are
 // the port 80h bit the position grounds (the relay-off position is omitted).
 // Order of Emulation -> Super Famicom Box -> Keyswitch and its hotkeys.
@@ -1384,6 +1451,10 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam)
 		if(HKmatch(SaveScreenShot))
 		{
 			WinRequestScreenshot();
+		}
+		if(HKmatch(CopyScreenShot))
+		{
+			WinRequestClipboardScreenshot();
 		}
 		if(HKmatch(ScopePause))
 		{
@@ -2883,6 +2954,9 @@ LRESULT CALLBACK WinProc(
 			break;
 		case ID_SAVESCREENSHOT:
 			WinRequestScreenshot();
+			break;
+		case ID_SAVESCREENSHOT_CLIPBOARD:
+			WinRequestClipboardScreenshot();
 			break;
 		case ID_FILE_SAVE_SPC_DATA:
 			S9xDumpSPCSnapshot();
@@ -6486,6 +6560,15 @@ static void CheckMenuStates ()
         mii.fState |= MFS_DISABLED;
 	SetMenuItemInfo (GUI.hMenu, ID_FILE_SAVE_SPC_DATA, FALSE, &mii);
     SetMenuItemInfo (GUI.hMenu, ID_FILE_SAVE_SRAM_DATA, FALSE, &mii);
+    SetMenuItemInfo (GUI.hMenu, ID_SAVESCREENSHOT, FALSE, &mii);
+    SetMenuItemInfo (GUI.hMenu, ID_SAVESCREENSHOT_CLIPBOARD, FALSE, &mii);
+	{
+		// The Satellaview memory pack: a BS-X game, or a slotted cart with a pack in it (CMemory::SaveMPAK).
+		MENUITEMINFO pack = mii;
+		const bool has_pack = Settings.BS || (Multi.cartSizeB && Multi.cartType == 3);
+		pack.fState = (mii.fState & MFS_DISABLED) || !has_pack ? MFS_DISABLED : MFS_ENABLED;
+		SetMenuItemInfo (GUI.hMenu, ID_SAVEMEMPACK, FALSE, &pack);
+	}
 
 	for(int i = ID_FILE_SAVE0; i <= ID_FILE_SAVE_FILE; i++)
 		SetMenuItemInfo (GUI.hMenu, i, FALSE, &mii);
@@ -17704,7 +17787,7 @@ struct hotkey_dialog_item {
 // hidden slots — the dialog template lays out 18 of them in a 2x9 grid; tabs that
 // have fewer items leave the trailing ones hidden.
 static hotkey_dialog_item hotkey_dialog_items[MAX_SWITCHABLE_HOTKEY_DIALOG_PAGES][MAX_SWITCHABLE_HOTKEY_DIALOG_ITEMS] = {
-    // Tab 0: Emulation (17 items)
+    // Tab 0: Emulation (18 items)
     {
         // Column 1
         { &CustomKeys.SpeedUp,           &CustomKeysExtra.SpeedUp,           HOTKEYS_LABEL_1_1 },
@@ -17723,9 +17806,9 @@ static hotkey_dialog_item hotkey_dialog_items[MAX_SWITCHABLE_HOTKEY_DIALOG_PAGES
         { &CustomKeys.SoftReset,         &CustomKeysExtra.SoftReset,         HOTKEYS_LABEL_1_16 },
         { &CustomKeys.ResetGame,         &CustomKeysExtra.ResetGame,         HOTKEYS_LABEL_1_13 },
         { &CustomKeys.SaveScreenShot,    &CustomKeysExtra.SaveScreenShot,    HOTKEYS_LABEL_1_14 },
+        { &CustomKeys.CopyScreenShot,    &CustomKeysExtra.CopyScreenShot,    HOTKEYS_SCREENSHOT_CLIPBOARD },
         { &CustomKeys.QuitS9X,           &CustomKeysExtra.QuitS9X,           HOTKEYS_LABEL_1_12 },
         { &CustomKeys.BiosManager,       &CustomKeysExtra.BiosManager,       HOTKEYS_BIOS_MANAGER },
-        { NULL, NULL, _T("") },
     },
     // Tab 1: States — uses dedicated controls (g_savestatesControls), no entries here.
     {

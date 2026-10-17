@@ -98,6 +98,7 @@ Nintendo is a trademark.")
 #define HOTKEYS_LABEL_1_12 TEXT("Quit SuperSnes9x:")
 #define HOTKEYS_LABEL_1_13 TEXT("Hard reset:")
 #define HOTKEYS_LABEL_1_14 TEXT("Save screenshot")
+#define HOTKEYS_SCREENSHOT_CLIPBOARD TEXT("Copy screenshot")
 #define HOTKEYS_LABEL_1_15 TEXT("Frame advance:")
 #define HOTKEYS_LABEL_1_16 TEXT("Soft reset:")
 

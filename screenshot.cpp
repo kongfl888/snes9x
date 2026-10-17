@@ -17,9 +17,18 @@
 #include "screenshot.h"
 
 
+bool8 (*S9xScreenshotTarget) (int width, int height) = NULL;
+
 bool8 S9xDoScreenshot (int width, int height)
 {
 	Settings.TakeScreenshot = FALSE;
+
+	if (S9xScreenshotTarget)
+	{
+		bool8 (*target) (int, int) = S9xScreenshotTarget;
+		S9xScreenshotTarget = NULL;
+		return (target(width, height));
+	}
 
 #ifdef HAVE_LIBPNG
 	FILE		*fp;

@@ -1207,6 +1207,7 @@ void WinRegisterConfigItems()
 	ADDN(Load[0],LoadSlot0); ADDN(Load[1],LoadSlot1); ADDN(Load[2],LoadSlot2); ADDN(Load[3],LoadSlot3); ADDN(Load[4],LoadSlot4); ADDN(Load[5],LoadSlot5); ADDN(Load[6],LoadSlot6); ADDN(Load[7],LoadSlot7); ADDN(Load[8],LoadSlot8); ADDN(Load[9],LoadSlot9);
 	ADDN(SelectSave[0],SelectSlot0); ADDN(SelectSave[1],SelectSlot1); ADDN(SelectSave[2],SelectSlot2); ADDN(SelectSave[3],SelectSlot3); ADDN(SelectSave[4],SelectSlot4); ADDN(SelectSave[5],SelectSlot5); ADDN(SelectSave[6],SelectSlot6); ADDN(SelectSave[7],SelectSlot7); ADDN(SelectSave[8],SelectSlot8); ADDN(SelectSave[9],SelectSlot9);
     ADD(SaveScreenShot); ADD(SlotPlus); ADD(SlotMinus); ADD(SlotSave); ADD(SlotLoad); ADD(BankPlus); ADD(BankMinus); ADD(DialogSave); ADD(DialogLoad);
+	AddVKey("Key:CopyScreenShot", CustomKeys.CopyScreenShot.key, VK_F12); AddVKMod("Mods:CopyScreenShot", CustomKeys.CopyScreenShot.modifiers, CUSTKEY_CTRL_MASK);
 	ADD(BGL1); ADD(BGL2); ADD(BGL3); ADD(BGL4); ADD(BGL5);
 	ADD(ClippingWindows); /*ADD(BGLHack);*/ ADD(Transparency); /*ADD(HDMA)*/; /*ADD(GLCube);*/
 	/*ADD(InterpMode7);*/ ADD(JoypadSwap); ADD(SwitchControllers); ADD(ResetGame); ADD(SoftReset); ADD(ToggleCheats);
@@ -1250,7 +1251,7 @@ void WinRegisterConfigItems()
 	ADDXALLN(Load[5],LoadSlot5); ADDXALLN(Load[6],LoadSlot6); ADDXALLN(Load[7],LoadSlot7); ADDXALLN(Load[8],LoadSlot8); ADDXALLN(Load[9],LoadSlot9);
 	ADDXALLN(SelectSave[0],SelectSlot0); ADDXALLN(SelectSave[1],SelectSlot1); ADDXALLN(SelectSave[2],SelectSlot2); ADDXALLN(SelectSave[3],SelectSlot3); ADDXALLN(SelectSave[4],SelectSlot4);
 	ADDXALLN(SelectSave[5],SelectSlot5); ADDXALLN(SelectSave[6],SelectSlot6); ADDXALLN(SelectSave[7],SelectSlot7); ADDXALLN(SelectSave[8],SelectSlot8); ADDXALLN(SelectSave[9],SelectSlot9);
-	ADDXALL(SaveScreenShot); ADDXALL(SlotPlus); ADDXALL(SlotMinus); ADDXALL(SlotSave); ADDXALL(SlotLoad); ADDXALL(BankPlus); ADDXALL(BankMinus); ADDXALL(DialogSave); ADDXALL(DialogLoad);
+	ADDXALL(SaveScreenShot); ADDXALL(CopyScreenShot); ADDXALL(SlotPlus); ADDXALL(SlotMinus); ADDXALL(SlotSave); ADDXALL(SlotLoad); ADDXALL(BankPlus); ADDXALL(BankMinus); ADDXALL(DialogSave); ADDXALL(DialogLoad);
 	ADDXALL(BGL1); ADDXALL(BGL2); ADDXALL(BGL3); ADDXALL(BGL4); ADDXALL(BGL5);
 	ADDXALL(ClippingWindows); ADDXALL(Transparency);
 	ADDXALL(JoypadSwap); ADDXALL(SwitchControllers); ADDXALL(ResetGame); ADDXALL(SoftReset); ADDXALL(ToggleCheats);
