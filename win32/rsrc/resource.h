@@ -962,6 +962,7 @@
 #define IDC_STATIC_REGULAR_LABEL        3350
 #define IDC_PAUSE_EMULATION             3351
 #define IDC_INPUT_PICTURE               3702
+#define IDC_BILINEAR_MODE7              3703
 
 #define ID_SOUND_AUDIOWAVEFORM          40198
 #define ID_INPUT_ENABLERUMBLE           40211
@@ -1009,7 +1010,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        201
 #define _APS_NEXT_COMMAND_VALUE         44451
-#define _APS_NEXT_CONTROL_VALUE         3703
+#define _APS_NEXT_CONTROL_VALUE         3704
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

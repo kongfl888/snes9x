@@ -364,6 +364,7 @@ bool EmuConfig::setDefaults(int section)
         show_overscan = false;
         transparency_effects = true;
         blend_hires = true;
+        bilinear_mode7 = false;
         widescreen = 0;
         high_resolution_effect = eLeaveAlone;
 
@@ -665,6 +666,7 @@ void EmuConfig::config(const std::string &filename, bool write)
     Int("AspectRatioDenominator", aspect_ratio_denominator, "Aspect-ratio height term (e.g. 3 in 4:3)");
     Bool("ShowOverscan", show_overscan, "Show the overscan area at the top and bottom that most games hide");
     Bool("Transparency", transparency_effects, "Render the SNES colour-math/transparency effects (turn off only for troubleshooting)");
+    Bool("BilinearMode7", bilinear_mode7, "Smooth Mode 7 backgrounds by blending neighbouring texels (a real SNES draws them blocky)");
     Bool("BlendHiRes", blend_hires, "Horizontally blend hi-res (512-wide) frames so games that alternate columns for a transparency effect look as intended with filters that do not account for this");
     Int("Widescreen", widescreen, "Widescreen width for supported games, in extra columns per side: 0 (none), 48 (352 wide, 16:9), 64 (384, 2:1), 96 (448, experimental), 112 (480, experimental). The patch is applied in memory only");
     Enum("HighResolutionEffect", high_resolution_effect, { "LeaveAlone", "ScaleDown", "ScaleUp" }, "How to handle hi-res (512-wide) frames: LeaveAlone, ScaleDown, or ScaleUp");

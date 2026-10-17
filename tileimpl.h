@@ -814,6 +814,133 @@ namespace TileImpl {
 	template<class PIXEL>
 	struct DrawMode7MosaicBG2 : public DrawTileMosaic<PIXEL, DrawMode7BG2_OP> {};
 
+	// Bilinear Mode 7, a display option (not the hardware): DrawTileNormal's walk, but each pixel blends
+	// the 4 texels around its sample point. A transparent neighbour lends the centre texel's colour.
+	template<class PIXEL, class OP>
+	struct DrawTileBilinear
+	{
+		typedef void (*call_t)(uint32 Left, uint32 Right, int D);
+
+		// The texel at (X, Y) under DrawTileNormal's repeat rules; 0 when there is none.
+		static alwaysinline uint8 Texel(uint8 *VRAM1, int X, int Y)
+		{
+			if (!PPU.Mode7Repeat)
+			{
+				X &= 0x3ff;
+				Y &= 0x3ff;
+			}
+			else
+			if ((X | Y) & ~0x3ff)
+				return (PPU.Mode7Repeat == 3) ? *(VRAM1 + ((Y & 7) << 4) + ((X & 7) << 1)) : 0;
+
+			uint8	*TileData = VRAM1 + (Memory.VRAM[((Y & ~7) << 5) + ((X >> 2) & ~1)] << 7);
+			return *(TileData + ((Y & 7) << 4) + ((X & 7) << 1));
+		}
+
+		// The middle colour field moved up 16 bits, so one multiply scales all three.
+		static alwaysinline uint32 Spread(uint16 c)
+		{
+			return (c & FIRST_THIRD_COLOR_MASK) | ((uint32) (c & SECOND_COLOR_MASK) << 16);
+		}
+
+		static void Draw(uint32 Left, uint32 Right, int D)
+		{
+			uint8	*VRAM1 = Memory.VRAM + 1;
+			uint16	*Palette = OP::DCMODE() ? DirectColourMaps[0] : IPPU.ScreenColors;
+			uint16	Blend[2] = { 0, 0 };
+
+			// The plotters draw Pix 1 of this palette: the blended colour.
+			GFX.RealScreenColors = Blend;
+			GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+
+			int	aa, cc;
+			int	startx;
+
+			uint32	Offset = GFX.StartY * GFX.PPL;
+			struct SLineMatrixData	*l = &LineMatrixData[GFX.StartY];
+
+			OFFSET_IN_LINE;
+			for (uint32 Line = GFX.StartY; Line <= GFX.EndY; Line++, Offset += GFX.PPL, l++)
+			{
+				int	yy, starty;
+
+				int32	HOffset = ((int32) l->M7HOFS  << 19) >> 19;
+				int32	VOffset = ((int32) l->M7VOFS  << 19) >> 19;
+
+				int32	CentreX = ((int32) l->CentreX << 19) >> 19;
+				int32	CentreY = ((int32) l->CentreY << 19) >> 19;
+
+				if (PPU.Mode7VFlip)
+					starty = 255 - (int) (Line + 1);
+				else
+					starty = Line + 1;
+
+				yy = CLIP_10_BIT_SIGNED(VOffset - CentreY);
+
+				int	BB = ((l->MatrixB * starty) & ~63) + ((l->MatrixB * yy) & ~63) + (CentreX << 8);
+				int	DD = ((l->MatrixD * starty) & ~63) + ((l->MatrixD * yy) & ~63) + (CentreY << 8);
+
+				// See DrawTileNormal above.
+				if (PPU.Mode7HFlip)
+				{
+					startx = (int) Right - 1 - IPPU.WideExtent;
+					aa = -l->MatrixA;
+					cc = -l->MatrixC;
+				}
+				else
+				{
+					startx = (int) Left - IPPU.WideExtent;
+					aa = l->MatrixA;
+					cc = l->MatrixC;
+				}
+
+				int	xx = CLIP_10_BIT_SIGNED(HOffset - CentreX);
+				int	AA = l->MatrixA * startx + ((l->MatrixA * xx) & ~63);
+				int	CC = l->MatrixC * startx + ((l->MatrixC * xx) & ~63);
+
+				uint8	Pix = 1;
+
+				for (uint32 x = Left; x < Right; x++, AA += aa, CC += cc)
+				{
+					int	XX = AA + BB;
+					int	YY = CC + DD;
+					int	X = XX >> 8;
+					int	Y = YY >> 8;
+
+					uint8	b = Texel(VRAM1, X, Y);
+					if (!(b & OP::MASK))
+						continue;
+
+					uint8	b10 = Texel(VRAM1, X + 1, Y) & OP::MASK;
+					uint8	b01 = Texel(VRAM1, X, Y + 1) & OP::MASK;
+					uint8	b11 = Texel(VRAM1, X + 1, Y + 1) & OP::MASK;
+
+					uint32	p00 = Spread(Palette[b & OP::MASK]);
+					uint32	p10 = b10 ? Spread(Palette[b10]) : p00;
+					uint32	p01 = b01 ? Spread(Palette[b01]) : p00;
+					uint32	p11 = b11 ? Spread(Palette[b11]) : p00;
+
+					// Weights in 32nds from the walk's fraction; they sum to 32, so no field overflows into the next.
+					uint32	fx  = (XX >> 3) & 31;
+					uint32	fy  = (YY >> 3) & 31;
+					uint32	fxy = (fx * fy) >> 5;
+					uint32	sum = (p00 * (32 + fxy - fx - fy) + p10 * (fx - fxy) + p01 * (fy - fxy) + p11 * fxy) >> 5;
+
+					Blend[1] = (uint16) ((sum & FIRST_THIRD_COLOR_MASK) | ((sum >> 16) & SECOND_COLOR_MASK));
+					DRAW_PIXEL(x, Pix);
+				}
+			}
+
+			GFX.RealScreenColors = Palette;
+			GFX.ScreenColors = GFX.ClipColors ? BlackColourMap : GFX.RealScreenColors;
+		}
+	};
+
+	template<class PIXEL>
+	struct DrawMode7BilinearBG1 : public DrawTileBilinear<PIXEL, DrawMode7BG1_OP> {};
+	template<class PIXEL>
+	struct DrawMode7BilinearBG2 : public DrawTileBilinear<PIXEL, DrawMode7BG2_OP> {};
+
 	#undef DRAW_PIXEL
 
 } // namespace TileImpl

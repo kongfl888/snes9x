@@ -96,6 +96,8 @@ struct EmuConfig
     // frames before the software filter ("Blend Hi-Res Images").
     bool transparency_effects;
     bool blend_hires;
+    // Smooth Mode 7 by blending texels (Settings.BilinearMode7, display only).
+    bool bilinear_mode7;
     // Widescreen for a supported game, as extra columns per side; 0 is none.
     int widescreen;
     enum HighResolutionEffect

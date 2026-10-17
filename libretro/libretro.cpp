@@ -424,6 +424,10 @@ static void update_variables(void)
             hires_blend = 2;
     }
 
+    var.key = "snes9x_bilinear_mode7";
+    var.value = NULL;
+    Settings.BilinearMode7 = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value && !strcmp(var.value, "enabled");
+
     var.key = "snes9x_overclock_superfx";
     var.value = NULL;
 

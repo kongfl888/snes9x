@@ -305,6 +305,8 @@ extern template struct TileImpl::Renderers<DrawMode7MosaicBG1, Normal1x1>;
 extern template struct TileImpl::Renderers<DrawMode7BG1, Normal1x1>;
 extern template struct TileImpl::Renderers<DrawMode7MosaicBG2, Normal1x1>;
 extern template struct TileImpl::Renderers<DrawMode7BG2, Normal1x1>;
+extern template struct TileImpl::Renderers<DrawMode7BilinearBG1, Normal1x1>;
+extern template struct TileImpl::Renderers<DrawMode7BilinearBG2, Normal1x1>;
 
 extern template struct TileImpl::Renderers<DrawTile16, Normal2x1>;
 extern template struct TileImpl::Renderers<DrawClippedTile16, Normal2x1>;
@@ -314,6 +316,8 @@ extern template struct TileImpl::Renderers<DrawMode7MosaicBG1, Normal2x1>;
 extern template struct TileImpl::Renderers<DrawMode7BG1, Normal2x1>;
 extern template struct TileImpl::Renderers<DrawMode7MosaicBG2, Normal2x1>;
 extern template struct TileImpl::Renderers<DrawMode7BG2, Normal2x1>;
+extern template struct TileImpl::Renderers<DrawMode7BilinearBG1, Normal2x1>;
+extern template struct TileImpl::Renderers<DrawMode7BilinearBG2, Normal2x1>;
 extern template struct TileImpl::Renderers<DrawTile16, Interlace>;
 extern template struct TileImpl::Renderers<DrawClippedTile16, Interlace>;
 extern template struct TileImpl::Renderers<DrawMosaicPixel16, Interlace>;
@@ -326,6 +330,8 @@ extern template struct TileImpl::Renderers<DrawMode7MosaicBG1, Hires>;
 extern template struct TileImpl::Renderers<DrawMode7BG1, Hires>;
 extern template struct TileImpl::Renderers<DrawMode7MosaicBG2, Hires>;
 extern template struct TileImpl::Renderers<DrawMode7BG2, Hires>;
+extern template struct TileImpl::Renderers<DrawMode7BilinearBG1, Hires>;
+extern template struct TileImpl::Renderers<DrawMode7BilinearBG2, Hires>;
 extern template struct TileImpl::Renderers<DrawTile16, HiresInterlace>;
 extern template struct TileImpl::Renderers<DrawClippedTile16, HiresInterlace>;
 extern template struct TileImpl::Renderers<DrawMosaicPixel16, HiresInterlace>;
@@ -338,10 +344,11 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 	void	(**DB)		(uint32, uint32, uint32);
 	void	(**DM7BG1)	(uint32, uint32, int);
 	void	(**DM7BG2)	(uint32, uint32, int);
-	bool8	M7M1, M7M2;
+	bool8	M7M1, M7M2, M7BL;
 
 	M7M1 = PPU.BGMosaic[0] && PPU.Mosaic > 1;
 	M7M2 = PPU.BGMosaic[1] && PPU.Mosaic > 1;
+	M7BL = Settings.BilinearMode7;	// mosaic keeps its blocks unfiltered
 
 	bool8 interlace = obj ? FALSE : S9xInterlacedBGRows();
 	bool8 hires = !sub && (BGMode == 5 || BGMode == 6 || IPPU.PseudoHires);
@@ -352,8 +359,8 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 		DCT    = Renderers<DrawClippedTile16, Normal1x1>::Functions;
 		DMP    = Renderers<DrawMosaicPixel16, Normal1x1>::Functions;
 		DB     = Renderers<DrawBackdrop16, Normal1x1>::Functions;
-		DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Normal1x1>::Functions : Renderers<DrawMode7BG1, Normal1x1>::Functions;
-		DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Normal1x1>::Functions : Renderers<DrawMode7BG2, Normal1x1>::Functions;
+		DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Normal1x1>::Functions : M7BL ? Renderers<DrawMode7BilinearBG1, Normal1x1>::Functions : Renderers<DrawMode7BG1, Normal1x1>::Functions;
+		DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Normal1x1>::Functions : M7BL ? Renderers<DrawMode7BilinearBG2, Normal1x1>::Functions : Renderers<DrawMode7BG2, Normal1x1>::Functions;
 		GFX.LinesPerTile = 8;
 	}
 	else if(hires)					// hires double width
@@ -364,8 +371,8 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 			DCT    = Renderers<DrawClippedTile16, HiresInterlace>::Functions;
 			DMP    = Renderers<DrawMosaicPixel16, HiresInterlace>::Functions;
 			DB     = Renderers<DrawBackdrop16, Hires>::Functions;
-			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Hires>::Functions : Renderers<DrawMode7BG1, Hires>::Functions;
-			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Hires>::Functions : Renderers<DrawMode7BG2, Hires>::Functions;
+			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Hires>::Functions : M7BL ? Renderers<DrawMode7BilinearBG1, Hires>::Functions : Renderers<DrawMode7BG1, Hires>::Functions;
+			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Hires>::Functions : M7BL ? Renderers<DrawMode7BilinearBG2, Hires>::Functions : Renderers<DrawMode7BG2, Hires>::Functions;
 			GFX.LinesPerTile = 4;
 		}
 		else
@@ -374,8 +381,8 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 			DCT    = Renderers<DrawClippedTile16, Hires>::Functions;
 			DMP    = Renderers<DrawMosaicPixel16, Hires>::Functions;
 			DB     = Renderers<DrawBackdrop16, Hires>::Functions;
-			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Hires>::Functions : Renderers<DrawMode7BG1, Hires>::Functions;
-			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Hires>::Functions : Renderers<DrawMode7BG2, Hires>::Functions;
+			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Hires>::Functions : M7BL ? Renderers<DrawMode7BilinearBG1, Hires>::Functions : Renderers<DrawMode7BG1, Hires>::Functions;
+			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Hires>::Functions : M7BL ? Renderers<DrawMode7BilinearBG2, Hires>::Functions : Renderers<DrawMode7BG2, Hires>::Functions;
 			GFX.LinesPerTile = 8;
 		}
 	}
@@ -387,8 +394,8 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 			DCT    = Renderers<DrawClippedTile16, Interlace>::Functions;
 			DMP    = Renderers<DrawMosaicPixel16, Interlace>::Functions;
 			DB     = Renderers<DrawBackdrop16, Normal2x1>::Functions;
-			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Normal2x1>::Functions : Renderers<DrawMode7BG1, Normal2x1>::Functions;
-			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Normal2x1>::Functions : Renderers<DrawMode7BG2, Normal2x1>::Functions;
+			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Normal2x1>::Functions : M7BL ? Renderers<DrawMode7BilinearBG1, Normal2x1>::Functions : Renderers<DrawMode7BG1, Normal2x1>::Functions;
+			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Normal2x1>::Functions : M7BL ? Renderers<DrawMode7BilinearBG2, Normal2x1>::Functions : Renderers<DrawMode7BG2, Normal2x1>::Functions;
 			GFX.LinesPerTile = 4;
 		}
 		else
@@ -397,8 +404,8 @@ void S9xSelectTileRenderers (int BGMode, bool8 sub, bool8 obj)
 			DCT    = Renderers<DrawClippedTile16, Normal2x1>::Functions;
 			DMP    = Renderers<DrawMosaicPixel16, Normal2x1>::Functions;
 			DB     = Renderers<DrawBackdrop16, Normal2x1>::Functions;
-			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Normal2x1>::Functions : Renderers<DrawMode7BG1, Normal2x1>::Functions;
-			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Normal2x1>::Functions : Renderers<DrawMode7BG2, Normal2x1>::Functions;
+			DM7BG1 = M7M1 ? Renderers<DrawMode7MosaicBG1, Normal2x1>::Functions : M7BL ? Renderers<DrawMode7BilinearBG1, Normal2x1>::Functions : Renderers<DrawMode7BG1, Normal2x1>::Functions;
+			DM7BG2 = M7M2 ? Renderers<DrawMode7MosaicBG2, Normal2x1>::Functions : M7BL ? Renderers<DrawMode7BilinearBG2, Normal2x1>::Functions : Renderers<DrawMode7BG2, Normal2x1>::Functions;
 			GFX.LinesPerTile = 8;
 		}
 	}

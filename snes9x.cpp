@@ -256,6 +256,7 @@ void S9xLoadConfigFiles (char **argv, int argc)
 	// Display
 
 	Settings.Transparency               =  conf.GetBool("Display::Transparency",               true);
+	Settings.BilinearMode7              =  conf.GetBool("Display::BilinearMode7",              false);
 	Settings.DisableGraphicWindows      = !conf.GetBool("Display::GraphicWindows",             true);
 	Settings.DisplayTime				=  conf.GetBool("Display::DisplayTime",                false);
 	Settings.DisplayFrameRate           =  conf.GetBool("Display::DisplayFrameRate",           false);

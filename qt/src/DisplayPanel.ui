@@ -421,6 +421,16 @@ Output directly will cause the screen to change between the two modes and look w
           </item>
          </layout>
         </item>
+        <item row="2" column="0">
+         <widget class="QCheckBox" name="checkBox_bilinear_mode7">
+          <property name="toolTip">
+           <string>Smooth the rotated and scaled Mode 7 backgrounds (F-Zero, Super Mario Kart, Pilotwings) by blending neighbouring pixels. A real SNES draws them blocky.</string>
+          </property>
+          <property name="text">
+           <string>Bilinear Mode 7</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>

@@ -211,6 +211,7 @@ int Snes9xConfig::load_defaults()
     Settings.AutoSaveDelay = 0;
     Settings.SkipFrames = THROTTLE_TIMER_FRAMESKIP;
     Settings.Transparency = true;
+    Settings.BilinearMode7 = false;
     S9xSetWidescreenDefaults(&Settings.Widescreen);
     // Draw messages into the SNES image (pixel font) instead of the on-screen
     // overlay, so they also land in screenshots, AVIs and the XV/Cairo drivers.
@@ -447,6 +448,7 @@ int Snes9xConfig::save_config_file()
 
     section = "Emulation";
     outbool("EmulateTransparency", Settings.Transparency, "Render the SNES color/transparency effects (turn off only for troubleshooting)");
+    outbool("BilinearMode7", Settings.BilinearMode7, "Smooth Mode 7 backgrounds by blending neighbouring texels (a real SNES draws them blocky)");
     outbool("DisplayTime", Settings.DisplayTime, "Show the current wall-clock time on screen");
     outbool("DisplayFrameRate", Settings.DisplayFrameRate, "Show the frames-per-second counter on screen");
     outbool("DisplayPressedKeys", Settings.DisplayPressedKeys, "Show the controller buttons being pressed on screen");
@@ -731,6 +733,7 @@ int Snes9xConfig::load_config_file()
 
     section = "Emulation";
     inbool("EmulateTransparency", Settings.Transparency);
+    inbool("BilinearMode7", Settings.BilinearMode7);
     inbool("DisplayTime", Settings.DisplayTime);
     inbool("DisplayFrameRate", Settings.DisplayFrameRate);
     inbool("DisplayPressedKeys", Settings.DisplayPressedKeys);

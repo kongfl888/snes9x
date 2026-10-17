@@ -30,6 +30,8 @@ namespace TileImpl {
 	template struct Renderers<DrawMode7BG1, Normal2x1>;
 	template struct Renderers<DrawMode7MosaicBG2, Normal2x1>;
 	template struct Renderers<DrawMode7BG2, Normal2x1>;
+	template struct Renderers<DrawMode7BilinearBG1, Normal2x1>;
+	template struct Renderers<DrawMode7BilinearBG2, Normal2x1>;
 
 	// normal double width interlace
 	template struct Renderers<DrawTile16, Interlace>;
