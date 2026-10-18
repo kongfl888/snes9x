@@ -509,7 +509,25 @@ void ExportTilemapToPng(HWND hDlg) {
     }
 }
 
+// The picture Export to PNG writes, to the clipboard.
+void CopyTilemapToClipboard(HWND hDlg) {
+    TMVState *st = GetState(hDlg);
+    if (!st || !st->bits) return;
+
+    bool savedGrid = st->showGrid;
+    st->showGrid = false;
+    Render(hDlg, true);
+    CopyViewerImage(hDlg, st->curSrcW, st->curSrcH, kSrcMax, st->bits, "Tilemap Viewer");
+    st->showGrid = savedGrid;
+    Render(hDlg);
+}
+
 INT_PTR CALLBACK DlgTilemapViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == ViewerCopyMessage()) {   // the Copy screenshot hotkey with this viewer in front
+        CopyTilemapToClipboard(hDlg);
+        SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
+        return TRUE;
+    }
     switch (msg) {
     case WM_INITDIALOG: {
     	LocalizeDialog(hDlg);
@@ -584,11 +602,13 @@ INT_PTR CALLBACK DlgTilemapViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 
         HMENU hMenu = CreatePopupMenu();
         AppendMenu(hMenu, MF_STRING, 1, _L(_T("Export to PNG...")));
+        AppendMenu(hMenu, MF_STRING, 2, _L(_T("Copy to Clipboard")));
         int cmd = TrackPopupMenu(hMenu,
                                  TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD,
                                  x, y, 0, hDlg, NULL);
         DestroyMenu(hMenu);
         if (cmd == 1) ExportTilemapToPng(hDlg);
+        else if (cmd == 2) CopyTilemapToClipboard(hDlg);
         return TRUE;
     }
 

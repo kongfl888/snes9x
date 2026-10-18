@@ -45,6 +45,7 @@
 #include "AcidTestsDlg.h"
 #include "CGBTilemapViewerDlg.h"
 #include "CGBSpriteViewerDlg.h"
+#include "debug_viewer_export.h"   // ViewerCopyMessage
 #include "debug_viewer_common.h"
 #include "win32_webcam.h"
 
@@ -1041,6 +1042,47 @@ static void WinRequestClipboardScreenshot()
 	WinRequestScreenshot();
 }
 
+// The Copy screenshot hotkey: a debug viewer in front (Tile, Tilemap or Sprite Viewer)
+// copies its own picture; otherwise the game's screenshot. Only this process's windows are asked.
+static void WinCopyScreenshotHotkey()
+{
+	HWND front = GetForegroundWindow();
+	DWORD pid = 0;
+	if (front && front != GUI.hWnd && GetWindowThreadProcessId(front, &pid) && pid == GetCurrentProcessId()
+		&& SendMessage(front, ViewerCopyMessage(), 0, 0))
+		return;
+	WinRequestClipboardScreenshot();
+}
+
+// A key pressed in a debug viewer goes to the viewer, never to HandleKeyMessage, unless
+// background input polls it there with background keyboard hotkeys on; otherwise the viewer
+// takes the Copy screenshot hotkey here. A plain key typed into an edit box stays text.
+static bool WinViewerTakesHotkey(const MSG &msg)
+{
+	const bool polled = GUI.BackgroundInput && !GUI.InactivePause && GUI.BackgroundKeyHotkeys;
+	if ((msg.message != WM_KEYDOWN && msg.message != WM_SYSKEYDOWN) || polled)
+		return false;
+	HWND root = GetAncestor(msg.hwnd, GA_ROOT);
+	if (!root || root == GUI.hWnd)
+		return false;
+
+	int modifiers = 0;
+	if (GetAsyncKeyState(VK_MENU) & 0x8000)
+		modifiers |= CUSTKEY_ALT_MASK;
+	if (GetAsyncKeyState(VK_CONTROL) & 0x8000)
+		modifiers |= CUSTKEY_CTRL_MASK;
+	if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+		modifiers |= CUSTKEY_SHIFT_MASK;
+	if (!MatchesHotkeyBinding((WORD)msg.wParam, modifiers, &CustomKeys.CopyScreenShot, &CustomKeysExtra.CopyScreenShot))
+		return false;
+
+	TCHAR cls[16] = {};
+	GetClassName(msg.hwnd, cls, 16);
+	if (!(modifiers & (CUSTKEY_ALT_MASK | CUSTKEY_CTRL_MASK)) && !lstrcmpi(cls, TEXT("Edit")))
+		return false;
+	return SendMessage(root, ViewerCopyMessage(), 0, 0) != 0;
+}
+
 // SFC-Box keyswitch rows follow the physical panel left-to-right; values are
 // the port 80h bit the position grounds (the relay-off position is omitted).
 // Order of Emulation -> Super Famicom Box -> Keyswitch and its hotkeys.
@@ -1454,7 +1496,7 @@ int HandleKeyMessage(WPARAM wParam, LPARAM lParam)
 		}
 		if(HKmatch(CopyScreenShot))
 		{
-			WinRequestClipboardScreenshot();
+			WinCopyScreenshotHotkey();
 		}
 		if(HKmatch(ScopePause))
 		{
@@ -4822,6 +4864,8 @@ void S9xOnSNESPadRead()
 					continue;
 				if (WinAcidTestsDialog() && IsDialogMessage (WinAcidTestsDialog(), &msg))
 					continue;
+				if (WinViewerTakesHotkey (msg))
+					continue;
 
 				if (!TranslateAccelerator (GUI.hWnd, GUI.Accelerators, &msg))
 				{
@@ -5385,6 +5429,8 @@ int WINAPI WinMain(
             if (s_hColorDlg && IsDialogMessage (s_hColorDlg, &msg))
                 continue;
             if (WinAcidTestsDialog() && IsDialogMessage (WinAcidTestsDialog(), &msg))
+                continue;
+            if (WinViewerTakesHotkey (msg))
                 continue;
 
             if (!TranslateAccelerator (GUI.hWnd, GUI.Accelerators, &msg))

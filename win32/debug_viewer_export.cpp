@@ -6,6 +6,7 @@
 #include <png.h>
 
 #include "../unzip/zip.h"
+#include "../snes9x.h"   // S9xMessage
 
 namespace {
 
@@ -122,6 +123,84 @@ bool WriteZipFile(const TCHAR *path, const std::vector<ZipBlob> &entries) {
     }
     zipClose(zf, NULL);
     return ok;
+}
+
+static bool PutImageOnClipboard(HWND owner, int w, int h, int stridePixels, const uint32 *bgra) {
+    if (w <= 0 || h <= 0 || !bgra) return false;
+
+    const int stride = (w * 3 + 3) & ~3;   // DIB rows are DWORD-aligned
+    HGLOBAL dib = GlobalAlloc(GMEM_MOVEABLE, sizeof(BITMAPINFOHEADER) + (SIZE_T)stride * h);
+    BITMAPINFOHEADER *bi = dib ? (BITMAPINFOHEADER *)GlobalLock(dib) : NULL;
+    if (!bi) {
+        if (dib) GlobalFree(dib);
+        return false;
+    }
+    ZeroMemory(bi, sizeof(*bi));
+    bi->biSize        = sizeof(*bi);
+    bi->biWidth       = w;
+    bi->biHeight      = h;   // bottom-up
+    bi->biPlanes      = 1;
+    bi->biBitCount    = 24;
+    bi->biCompression = BI_RGB;
+    bi->biSizeImage   = stride * h;
+    uint8 *rows = (uint8 *)(bi + 1);
+    for (int y = 0; y < h; y++) {
+        const uint32 *s = bgra + (size_t)y * stridePixels;
+        uint8 *d = rows + (size_t)(h - 1 - y) * stride;
+        for (int x = 0; x < w; x++) {
+            *d++ = (uint8)(s[x]);
+            *d++ = (uint8)(s[x] >> 8);
+            *d++ = (uint8)(s[x] >> 16);
+        }
+    }
+    GlobalUnlock(dib);
+
+    // The same picture as PNG, for apps that keep its transparency.
+    HGLOBAL png = NULL;
+    std::vector<uint8> bytes;
+    if (WritePngToMemory(w, h, stridePixels, bgra, bytes) && !bytes.empty()) {
+        png = GlobalAlloc(GMEM_MOVEABLE, bytes.size());
+        void *p = png ? GlobalLock(png) : NULL;
+        if (p) {
+            memcpy(p, bytes.data(), bytes.size());
+            GlobalUnlock(png);
+        } else if (png) {
+            GlobalFree(png);
+            png = NULL;
+        }
+    }
+
+    if (!OpenClipboard(owner)) {
+        GlobalFree(dib);
+        if (png) GlobalFree(png);
+        return false;
+    }
+    EmptyClipboard();
+    const bool ok = SetClipboardData(CF_DIB, dib) != NULL;   // the clipboard owns what it takes
+    if (!ok) GlobalFree(dib);
+    static const UINT cfPng = RegisterClipboardFormat(_T("PNG"));
+    if (png && (!cfPng || !SetClipboardData(cfPng, png))) GlobalFree(png);
+    CloseClipboard();
+    return ok;
+}
+
+bool CopyViewerImage(HWND owner, int w, int h, int stridePixels, const uint32 *bgra,
+                     const char *what) {
+    const bool ok = PutImageOnClipboard(owner, w, h, stridePixels, bgra);
+    if (ok) {
+        char msg[96];
+        _snprintf(msg, sizeof(msg), "%s copied to the clipboard", what);
+        msg[sizeof(msg) - 1] = '\0';
+        S9xMessage(S9X_INFO, 0, msg);
+    } else {
+        MessageBox(owner, _T("Failed to copy to the clipboard"), _T("Copy"), MB_OK | MB_ICONERROR);
+    }
+    return ok;
+}
+
+UINT ViewerCopyMessage() {
+    static const UINT msg = RegisterWindowMessage(_T("SuperSnes9xViewerCopyToClipboard"));
+    return msg;
 }
 
 bool ShowSaveDialog(HWND parent, TCHAR *outPath, int outPathLen,

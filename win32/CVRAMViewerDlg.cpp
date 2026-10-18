@@ -552,7 +552,25 @@ void ExportTilesToPng(HWND hDlg) {
     }
 }
 
+// The picture Export to PNG writes, to the clipboard.
+void CopyTilesToClipboard(HWND hDlg) {
+    VRAMState *st = GetState(hDlg);
+    if (!st || !st->tileBits) return;
+
+    bool savedGrid = st->showGrid;
+    st->showGrid = false;
+    RedrawTiles(hDlg);
+    CopyViewerImage(hDlg, st->curSrcW, st->curSrcH, kSrcMax, st->tileBits, "Tile Viewer");
+    st->showGrid = savedGrid;
+    RedrawTiles(hDlg);
+}
+
 INT_PTR CALLBACK DlgVRAMViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == ViewerCopyMessage()) {   // the Copy screenshot hotkey with this viewer in front
+        CopyTilesToClipboard(hDlg);
+        SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
+        return TRUE;
+    }
     switch (msg) {
     case WM_INITDIALOG: {
     	LocalizeDialog(hDlg);
@@ -628,11 +646,13 @@ INT_PTR CALLBACK DlgVRAMViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
         HMENU hMenu = CreatePopupMenu();
         AppendMenu(hMenu, MF_STRING, 1, _L(_T("Export to PNG...")));
+        AppendMenu(hMenu, MF_STRING, 2, _L(_T("Copy to Clipboard")));
         int cmd = TrackPopupMenu(hMenu,
                                  TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD,
                                  x, y, 0, hDlg, NULL);
         DestroyMenu(hMenu);
         if (cmd == 1) ExportTilesToPng(hDlg);
+        else if (cmd == 2) CopyTilesToClipboard(hDlg);
         return TRUE;
     }
 

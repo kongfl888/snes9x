@@ -187,7 +187,24 @@ void ExportToPng(HWND hDlg) {
         MessageBox(hDlg, _T("Failed to save PNG"), _T("Export"), MB_OK | MB_ICONERROR);
 }
 
+// The picture Export to PNG writes, to the clipboard.
+void CopyGBSpritesToClipboard(HWND hDlg) {
+    GBSVState *st = GetState(hDlg);
+    if (!st || !st->tileBits) return;
+    bool savedVp = st->showViewport;
+    st->showViewport = false;
+    RedrawSprites(hDlg, true);
+    CopyViewerImage(hDlg, st->curSrcW, st->curSrcH, kSrcMax, st->tileBits, "Sprite Viewer");
+    st->showViewport = savedVp;
+    RedrawSprites(hDlg);
+}
+
 INT_PTR CALLBACK DlgGBSpriteViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == ViewerCopyMessage()) {   // the Copy screenshot hotkey with this viewer in front
+        CopyGBSpritesToClipboard(hDlg);
+        SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
+        return TRUE;
+    }
     switch (msg) {
     case WM_INITDIALOG: {
     	LocalizeDialog(hDlg);
@@ -237,9 +254,11 @@ INT_PTR CALLBACK DlgGBSpriteViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lP
         if (x == -1 && y == -1) { RECT rc; GetWindowRect(hCanvas, &rc); x = rc.left + 20; y = rc.top + 20; }
         HMENU hMenu = CreatePopupMenu();
         AppendMenu(hMenu, MF_STRING, 1, _L(_T("Export to PNG...")));
+        AppendMenu(hMenu, MF_STRING, 2, _L(_T("Copy to Clipboard")));
         int cmd = TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, x, y, 0, hDlg, NULL);
         DestroyMenu(hMenu);
         if (cmd == 1) ExportToPng(hDlg);
+        else if (cmd == 2) CopyGBSpritesToClipboard(hDlg);
         return TRUE;
     }
 

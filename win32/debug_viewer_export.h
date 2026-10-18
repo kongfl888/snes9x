@@ -23,6 +23,16 @@ struct ZipBlob {
 
 bool WriteZipFile(const TCHAR *path, const std::vector<ZipBlob> &entries);
 
+// Copy a picture (the BGRA buffer WritePngFile takes) to the clipboard: a 24-bit DIB
+// that pastes anywhere, plus a PNG that keeps transparency for apps that read one.
+// Reports the result: a message in the main window, or a box on failure.
+bool CopyViewerImage(HWND owner, int w, int h, int stridePixels, const uint32 *bgra,
+                     const char *what);
+
+// Sent to a debug viewer by the Copy screenshot hotkey: it copies its main picture
+// and returns TRUE (via DWLP_MSGRESULT). Any other window returns 0.
+UINT ViewerCopyMessage();
+
 // Present a standard Save-As dialog. Returns true if the user chose a path
 // (and it has been written into outPath). filter is a double-null-terminated
 // GetSaveFileName filter string (e.g. "PNG (*.png)\0*.png\0\0").

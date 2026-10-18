@@ -188,7 +188,24 @@ void ExportTilesToPng(HWND hDlg) {
         MessageBox(hDlg, _T("Failed to save PNG"), _T("Export"), MB_OK | MB_ICONERROR);
 }
 
+// The picture Export to PNG writes, to the clipboard.
+void CopyGBTilesToClipboard(HWND hDlg) {
+    GBTVState *st = GetState(hDlg);
+    if (!st || !st->tileBits) return;
+    bool savedGrid = st->showGrid;
+    st->showGrid = false;
+    RedrawTiles(hDlg);
+    CopyViewerImage(hDlg, st->curSrcW, st->curSrcH, kSrcMax, st->tileBits, "Tile Viewer");
+    st->showGrid = savedGrid;
+    RedrawTiles(hDlg);
+}
+
 INT_PTR CALLBACK DlgGBTileViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == ViewerCopyMessage()) {   // the Copy screenshot hotkey with this viewer in front
+        CopyGBTilesToClipboard(hDlg);
+        SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
+        return TRUE;
+    }
     switch (msg) {
     case WM_INITDIALOG: {
     	LocalizeDialog(hDlg);
@@ -245,10 +262,12 @@ INT_PTR CALLBACK DlgGBTileViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPar
         }
         HMENU hMenu = CreatePopupMenu();
         AppendMenu(hMenu, MF_STRING, 1, _L(_T("Export to PNG...")));
+        AppendMenu(hMenu, MF_STRING, 2, _L(_T("Copy to Clipboard")));
         int cmd = TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD,
                                  x, y, 0, hDlg, NULL);
         DestroyMenu(hMenu);
         if (cmd == 1) ExportTilesToPng(hDlg);
+        else if (cmd == 2) CopyGBTilesToClipboard(hDlg);
         return TRUE;
     }
 

@@ -637,7 +637,35 @@ void ExportScreenToPng(HWND hDlg) {
     }
 }
 
+// The pictures the preview's and the screen's Export to PNG write, to the clipboard.
+void CopySingleSpriteToClipboard(HWND hDlg, int idx) {
+    SPVState *st = GetState(hDlg);
+    if (!st || idx < 0 || idx >= 128) return;
+
+    std::vector<uint32> pixels;
+    int w, h;
+    RenderSpriteRGBA(st->sprites[idx], st->sizeBase, pixels, w, h);
+    char what[24];
+    _snprintf(what, sizeof(what), "Sprite %d", idx);
+    what[sizeof(what) - 1] = '\0';
+    CopyViewerImage(hDlg, w, h, w, pixels.data(), what);
+}
+
+void CopySpriteScreenToClipboard(HWND hDlg) {
+    SPVState *st = GetState(hDlg);
+    if (!st) return;
+
+    std::vector<uint32> pixels;
+    RenderScreenForExport(st, pixels);
+    CopyViewerImage(hDlg, kScreenW, kScreenH, kScreenW, pixels.data(), "Sprite Viewer");
+}
+
 INT_PTR CALLBACK DlgSpriteViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == ViewerCopyMessage()) {   // the Copy screenshot hotkey with this viewer in front: the screen
+        CopySpriteScreenToClipboard(hDlg);
+        SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
+        return TRUE;
+    }
     switch (msg) {
     case WM_INITDIALOG: {
     	LocalizeDialog(hDlg);
@@ -809,11 +837,13 @@ INT_PTR CALLBACK DlgSpriteViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPar
             adjustKeyboardPos(hPrev);
             HMENU hMenu = CreatePopupMenu();
             AppendMenu(hMenu, MF_STRING, 1, _L(_T("Export to PNG...")));
+            AppendMenu(hMenu, MF_STRING, 2, _L(_T("Copy to Clipboard")));
             int cmd = TrackPopupMenu(hMenu,
                                      TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD,
                                      x, y, 0, hDlg, NULL);
             DestroyMenu(hMenu);
             if (cmd == 1) ExportSingleSpriteToPng(hDlg, st->selected);
+            else if (cmd == 2) CopySingleSpriteToClipboard(hDlg, st->selected);
             return TRUE;
         }
 
@@ -821,11 +851,13 @@ INT_PTR CALLBACK DlgSpriteViewer(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPar
             adjustKeyboardPos(hScrn);
             HMENU hMenu = CreatePopupMenu();
             AppendMenu(hMenu, MF_STRING, 1, _L(_T("Export to PNG...")));
+            AppendMenu(hMenu, MF_STRING, 2, _L(_T("Copy to Clipboard")));
             int cmd = TrackPopupMenu(hMenu,
                                      TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD,
                                      x, y, 0, hDlg, NULL);
             DestroyMenu(hMenu);
             if (cmd == 1) ExportScreenToPng(hDlg);
+            else if (cmd == 2) CopySpriteScreenToClipboard(hDlg);
             return TRUE;
         }
         break;
