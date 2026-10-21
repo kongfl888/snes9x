@@ -8,7 +8,7 @@
 #define _SNES9X_H_
 
 #ifndef VERSION
-#define VERSION	"1.63"
+#define VERSION	"1.63.2026"
 #endif
 
 #include "port.h"
