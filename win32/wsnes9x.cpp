@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -442,13 +442,13 @@ static uint32 FrameTimings[] = {
 };
 
 // Languages supported by Snes9x: Windows
-// 0 - English [Default]
+// 0 - 简体中文 [默认]
 struct sLanguages Languages[] = {
 	{ IDR_MENU_US,
-		TEXT("Failed to initialize currently selected display output!\n Try switching to a different output method in the display settings."),
-		TEXT("DirectDraw failed to set the selected display mode!"),
-		TEXT("DirectSound failed to initialize; no sound will be played."),
-		TEXT("These settings won't take effect until you restart the emulator.")}
+		TEXT("当前选中的显示输出初始化失败！\n 请尝试在显示设置中切换到其他输出方式。"),
+		TEXT("DirectDraw 无法设置所选显示模式！"),
+		TEXT("DirectSound 初始化失败；将不会播放任何声音。"),
+		TEXT("这些设置需要重启模拟器后才会生效。")}
 };
 
 struct OpenMovieParams
@@ -1508,7 +1508,7 @@ bool WinMoviePlay(LPCTSTR filename)
 	while (info.ROMCRC32 != Memory.ROMCRC32) {
 		TCHAR temp[512];
 		CPToWide wromname(info.ROMName, 932);
-		wsprintf(temp, TEXT("Movie's ROM: crc32=%08X, name=%s\nCurrent ROM: crc32=%08X\n\nstill want to play the movie?"),
+		wsprintf(temp, TEXT("录像的 ROM：crc32=%08X，名称=%s\n当前 ROM：crc32=%08X\n\n仍然要播放此录像吗？"),
 			info.ROMCRC32, (wchar_t *)wromname, Memory.ROMCRC32);
 		int sel = MessageBox(GUI.hWnd, temp, SNES9X_INFO, MB_ABORTRETRYIGNORE|MB_ICONQUESTION);
 		switch (sel) {
@@ -1578,7 +1578,7 @@ void WinShowCheatEditorDialog()
 }
 
 
-#define MOVIE_LOCKED_SETTING	if(S9xMovieActive()) {MessageBox(GUI.hWnd,TEXT("That setting is locked while a movie is active."),TEXT("Notice"),MB_OK|MB_ICONEXCLAMATION); break;}
+#define MOVIE_LOCKED_SETTING	if(S9xMovieActive()) {MessageBox(GUI.hWnd,TEXT("录像激活期间该设置已被锁定。"),TEXT("提示"),MB_OK|MB_ICONEXCLAMATION); break;}
 
 LRESULT CALLBACK WinProc(
 						 HWND hWnd,
@@ -2012,8 +2012,8 @@ LRESULT CALLBACK WinProc(
 				{
 					char localhostname [256];
 					gethostname(localhostname,256);
-					_stprintf(localhostmsg, TEXT("Your host name is: %s\nYour port number is: %d"), (TCHAR *)_tFromChar(localhostname), Settings.Port);
-					MessageBox(GUI.hWnd,localhostmsg,TEXT("Note"),MB_OK);
+					_stprintf(localhostmsg, TEXT("你的主机名为：%s\n你的端口号为：%d"), (TCHAR *)_tFromChar(localhostname), Settings.Port);
+					MessageBox(GUI.hWnd,localhostmsg,TEXT("提示"),MB_OK);
 				}
 			}
             break;
@@ -2320,11 +2320,10 @@ LRESULT CALLBACK WinProc(
 			RestoreSNESDisplay ();
 			break;
         case ID_EMULATION_HACKS:
-			if (MessageBoxA(hWnd,
-				"The settings in this dialog should only be used for compatibility "
-				"with old ROM hacks or if you otherwise know what you're doing.\n\n"
-				"If any problems occur, click \"Set Defaults\" to reset the options to normal.",
-				"Warning: Unsupported",
+			if (MessageBox(hWnd,
+				TEXT("此对话框中的设置仅应用于兼容旧版 ROM Hacks，或当你确实了解自己在做什么时使用。\n\n")
+				TEXT("如果出现任何问题，请点击“恢复默认”选项来重置为正常状态。"),
+				TEXT("警告：不受支持"),
 				MB_ICONWARNING | MB_OKCANCEL) != IDOK)
 				break;
 
@@ -2702,14 +2701,14 @@ BOOL WinInit( HINSTANCE hInstance)
 
     if (!RegisterClassEx (&wndclass))
 	{
-		MessageBox (NULL, TEXT("Failed to register windows class"), TEXT("Internal Error"), MB_OK | MB_ICONSTOP);
+		MessageBox (NULL, TEXT("注册窗口类失败"), TEXT("内部错误"), MB_OK | MB_ICONSTOP);
         return FALSE;
 	}
 
 	GUI.hMenu = LoadMenu(GUI.hInstance, MAKEINTRESOURCE(IDR_MENU_US));
     if (GUI.hMenu == NULL)
 	{
-		MessageBox (NULL, TEXT("Failed to initialize the menu.\nThis could indicate a failure of your operating system;\ntry closing some other windows or programs, or restart your computer, before opening Snes9x again.\nOr, if you compiled this program yourself, ensure that Snes9x was built with the proper resource files."), TEXT("Snes9x - Menu Initialization Failure"), MB_OK | MB_ICONSTOP);
+		MessageBox (NULL, TEXT("菜单初始化失败。\n这可能说明你的操作系统存在问题；\n请先关闭一些其他窗口或程序，或重启计算机，再重新打开 Snes9x。\n或者，如果你是自己编译本程序的，请确保 Snes9x 使用了正确的资源文件进行编译。"), TEXT("Snes9x - 菜单初始化失败"), MB_OK | MB_ICONSTOP);
 //        return FALSE; // disabled: try to function without the menu
 	}
 
@@ -2728,7 +2727,7 @@ BOOL WinInit( HINSTANCE hInstance)
 		for (int j = 0; j < SAVE_SLOTS_PER_BANK; j++)
 		{
 			TCHAR *slot_string = g_saveMenuItemStrings[i * SAVE_SLOTS_PER_BANK + j];
-			_stprintf(slot_string, _T("Slot #&%d"), j);
+			_stprintf(slot_string, _T("槽位 #&%d"), j);
 			mii.fMask = MIIM_STRING | MIIM_ID;
 			mii.dwTypeData = slot_string;
 			mii.wID = ID_FILE_SAVE0 + i * SAVE_SLOTS_PER_BANK + j;
@@ -2738,7 +2737,7 @@ BOOL WinInit( HINSTANCE hInstance)
 		}
 
 		// add the bank menus to save and load
-		_stprintf(g_bankMenuItemStrings[i], _T("Bank #&%d"), i);
+		_stprintf(g_bankMenuItemStrings[i], _T("库 #&%d"), i);
 		mii.fMask = MIIM_STRING | MIIM_SUBMENU;
 		mii.dwTypeData = g_bankMenuItemStrings[i];
 		mii.hSubMenu = bank_menu_save;
@@ -2748,9 +2747,9 @@ BOOL WinInit( HINSTANCE hInstance)
 	}
 #ifdef DEBUGGER
 	if(GUI.hMenu) {
-		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_STRING | MF_ENABLED,ID_DEBUG_FRAME_ADVANCE,TEXT("&Debug Frame Advance"));
-		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_STRING | MF_ENABLED,ID_DEBUG_TRACE,TEXT("&Trace"));
-		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_STRING | MF_ENABLED,ID_DEBUG_APU_TRACE,TEXT("&APU Trace"));
+		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_STRING | MF_ENABLED,ID_DEBUG_FRAME_ADVANCE,TEXT("调试逐帧步进(&D)"));
+		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_STRING | MF_ENABLED,ID_DEBUG_TRACE,TEXT("跟踪(&T)"));
+		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_STRING | MF_ENABLED,ID_DEBUG_APU_TRACE,TEXT("APU 跟踪(&A)"));
 		InsertMenu(GUI.hMenu,ID_OPTIONS_SETTINGS,MF_BYCOMMAND | MF_SEPARATOR | MF_ENABLED,NULL,NULL);
 	}
 #endif
@@ -2807,7 +2806,7 @@ void S9xExtraUsage ()
 	S9xMessage(S9X_INFO, S9X_USAGE, "-restore                        Reset all settings to default");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-removeregistrykeys             Remove registry keys");
 	S9xMessage(S9X_INFO, S9X_USAGE, "-cartb <filename>               Specify the second cart for multicart, also triggers multicart");
-	MessageBox(NULL, _T("Snes9x command line options have been written to stdout.txt in the same folder as snes9x.exe"), _T("Command line options"), MB_OK | MB_ICONINFORMATION);
+	MessageBox(NULL, _T("Snes9x 的命令行选项已写入与 snes9x.exe 同目录下的 stdout.txt 文件中"), _T("命令行选项"), MB_OK | MB_ICONINFORMATION);
 }
 
 // handles joystick hotkey presses
@@ -3587,10 +3586,10 @@ void FreezeUnfreezeDialog(bool8 freeze)
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     ofn.hwndOwner = GUI.hWnd;
-    ofn.lpstrFilter = TEXT("State files\0*.state;*.frz;*.0*\0All Files\0*.*\0\0");
+    ofn.lpstrFilter = TEXT("即时存档文件\0*.state;*.frz;*.0*\0所有文件\0*.*\0\0");
     ofn.lpstrFile = filename;
     ofn.lpstrInitialDir = S9xGetDirectoryT(SNAPSHOT_DIR);
-    ofn.lpstrTitle = TEXT("Select State");
+    ofn.lpstrTitle = TEXT("选择即时存档");
     ofn.lpstrDefExt = TEXT("state");
     ofn.nMaxFile = MAX_PATH;
 
@@ -3715,8 +3714,8 @@ void CheckDirectoryIsWritable (const char *filename)
     FILE *fs = fopen (filename, "w+");
 
     if (fs == NULL)
-	MessageBox (GUI.hWnd, TEXT("The folder where Snes9x saves emulated save RAM files and\ngame save positions (freeze files) is currently set to a\nread-only folder.\n\nIf you do not change the game save folder, Snes9x will be\nunable to save your progress in this game. Change the folder\nfrom the Settings Dialog available from the Options menu.\n\nThe default save folder is called Saves, if no value is set.\n"),
-							 TEXT("Snes9x: Unable to save file warning"),
+	MessageBox (GUI.hWnd, TEXT("Snes9x 保存模拟存档 RAM 文件及\r\n游戏存档位置（冻结文件）的文件夹当前被设置为\n只读文件夹。\n\n如果不更改游戏存档文件夹，Snes9x 将无法\n保存你在本游戏中的进度。请通过“选项”菜单中的\n“设置”对话框更改该文件夹。\n\n若未设置任何值，默认存档文件夹名为 Saves。\n"),
+							 TEXT("Snes9x：无法保存文件警告"),
 							 MB_OK | MB_ICONINFORMATION);
     else
     {
@@ -3967,7 +3966,7 @@ static void CheckMenuStates ()
 	mii.cbSize = sizeof(mii);
 	mii.fMask = MIIM_STRING;
 
-	mii.dwTypeData = (TCHAR *)(!GUI.AVIOut ? TEXT("Start AVI Recording...") : TEXT("Stop AVI Recording"));
+	mii.dwTypeData = (TCHAR *)(!GUI.AVIOut ? TEXT("开始 AVI 录制...") : TEXT("停止 AVI 录制"));
 	SetMenuItemInfo (GUI.hMenu, ID_FILE_AVI_RECORDING, FALSE, &mii);
 }
 
@@ -4072,7 +4071,7 @@ bool8 S9xLoadROMImage (const TCHAR *string)
 {
     RestoreGUIDisplay ();
     TCHAR *buf = new TCHAR [200 + lstrlen (string)];
-    _stprintf (buf, TEXT("The NetPlay server is requesting you load the following game:\n '%s'"),
+    _stprintf (buf, TEXT("联机服务器请求你载入以下游戏：\n '%s'"),
 		string);
 
     MessageBox (GUI.hWnd, buf,
@@ -4302,7 +4301,7 @@ void S9xSetRecentGames ()
 				mii_sep.fType = MFT_SEPARATOR;
 				InsertMenuItem(recent, 0xFF00 + i + 1, FALSE, &mii_sep);
 
-				mii.dwTypeData = TEXT("Clear List");
+				mii.dwTypeData = TEXT("清除列表");
 				mii.cch = lstrlen(name) + 1;
 				mii.wID = 0xFF00 + MAX_RECENT_GAMES_LIST_SIZE;
 				InsertMenuItem(recent, mii.wID, FALSE, &mii);
@@ -4390,7 +4389,7 @@ void UpdateAudioDeviceDropdown(HWND hCtl)
 
     if (!num_devices)
     {
-        ComboBox_AddString(hCtl, _T("Default"));
+        ComboBox_AddString(hCtl, _T("默认"));
     }
     else
     {
@@ -4419,9 +4418,9 @@ INT_PTR CALLBACK DlgSoundConf(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
             // FIXME: these strings should come from wlanguage.h
 
-            CreateToolTip(IDC_INRATEEDIT, hDlg, TEXT("For each 'Input rate' samples generated by the SNES, 'Playback rate' samples will produced. If you experience crackling you can try to lower this setting."));
-            CreateToolTip(IDC_INRATE, hDlg, TEXT("For each 'Input rate' samples generated by the SNES, 'Playback rate' samples will produced. If you experience crackling you can try to lower this setting."));
-            CreateToolTip(IDC_DYNRATECONTROL, hDlg, TEXT("Try to dynamically adjust the input rate to never overflow or underflow the sound buffer."));
+            CreateToolTip(IDC_INRATEEDIT, hDlg, TEXT("每个 SNES 的原生“输入频率”采样，都会转换为对应的“播放频率”采样。如出现爆音，可尝试降低此值。"));
+            CreateToolTip(IDC_INRATE, hDlg, TEXT("每个 SNES 的原生“输入频率”采样，都会转换为对应的“播放频率”采样。如出现爆音，可尝试降低此值。"));
+            CreateToolTip(IDC_DYNRATECONTROL, hDlg, TEXT("尝试动态调整输入频率，让声音缓冲区既不溢出也不下溢。"));
 
             HWND output_dropdown = GetDlgItem(hDlg, IDC_OUTPUT_DEVICE);
             UpdateAudioDeviceDropdown(output_dropdown);
@@ -5077,7 +5076,7 @@ INT_PTR CALLBACK DlgInfoProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 				Utf8ToWide romname(Memory.ROMFilename.c_str());
 				TCHAR rominfo[4096];
-				_stprintf(rominfo, TEXT("File: %s\r\n%s"), (TCHAR *)romname, (TCHAR *)_tFromMS932(romtext));
+				_stprintf(rominfo, TEXT("文件：%s\r\n%s"), (TCHAR *)romname, (TCHAR *)_tFromMS932(romtext));
 
                 SendDlgItemMessage(hDlg, IDC_ROM_DATA, WM_SETTEXT, 0, (LPARAM)((TCHAR *)rominfo));
 				break;
@@ -5163,16 +5162,16 @@ INT_PTR CALLBACK DlgEmulatorHacksProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM
         SendDlgItemMessage(hDlg, IDC_SFX_CLOCK_SPEED_SPIN, UDM_SETPOS, 0, Settings.SuperFXClockMultiplier);
         SendDlgItemMessage(hDlg, IDC_SFX_CLOCK_SPEED_SPIN, UDM_SETACCEL, 1, (LPARAM)&accel);
 
-        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("None"));
-        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("Low"));
-        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("Medium"));
-        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("Max"));
+        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("无"));
+        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("低"));
+        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("中"));
+        SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_ADDSTRING, 0, (LPARAM)TEXT("最大"));
         SendDlgItemMessage(hDlg, IDC_CPU_OVERCLOCK, CB_SETCURSEL, Settings.OverclockMode, 0);
 
-        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("None"));
-        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("Linear"));
-        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("Gaussian (SNES Hardware)"));
-        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("Cubic"));
+        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("无"));
+        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("线性"));
+        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("高斯（SNES 硬件）"));
+        SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("三次"));
         SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_ADDSTRING, 0, (LPARAM)TEXT("Sinc"));
         SendDlgItemMessage(hDlg, IDC_SOUND_INTERPOLATION, CB_SETCURSEL, Settings.InterpolationMethod, 0);
 
@@ -5193,7 +5192,7 @@ INT_PTR CALLBACK DlgEmulatorHacksProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM
                 && !Settings.StopEmulation)
             {
 
-                if (MessageBoxA(hDlg, "To make the requested changes, the game will need to be reset.", "Reset Required", MB_OKCANCEL) != IDOK)
+                if (MessageBox(hDlg, TEXT("若要应用所请求的更改，则需对游戏进行重置。"), TEXT("需要重置"), MB_OKCANCEL) != IDOK)
                     return false;
                 must_reset = true;
             }
@@ -7019,7 +7018,7 @@ INT_PTR CALLBACK DlgNetConnect(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 
 				if(_ttoi(portTemp)>65535||_ttoi(portTemp)<1024)
 				{
-					MessageBox(hDlg,TEXT("Port Number needs to be between 1024 and 65535"),TEXT("Error"),MB_OK);
+					MessageBox(hDlg,TEXT("端口号需介于 1024 和 65535 之间"),TEXT("错误"),MB_OK);
 					break;
 				}
 				else
@@ -7033,7 +7032,7 @@ INT_PTR CALLBACK DlgNetConnect(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam
 				SendDlgItemMessage(hDlg,IDC_HOSTNAME,WM_GETTEXT,100,(LPARAM)temp);
 				if(!lstrcmp(temp, NPCON_ENTERHOST))
 				{
-					MessageBox(hDlg,NPCON_PLEASE_ENTERHOST,TEXT("Error"),MB_OK);
+					MessageBox(hDlg,NPCON_PLEASE_ENTERHOST,TEXT("错误"),MB_OK);
 					break;
 				}
 				lstrcpy(hostname,temp);
@@ -7089,8 +7088,8 @@ void SetInfoDlgColor(unsigned char r, unsigned char g, unsigned char b)
 }
 
 #define SNES9XWPROGID TEXT("Snes9x.Win32")
-#define SNES9XWPROGIDDESC TEXT("Snes9x ROM")
-#define SNES9XWAPPDESC TEXT("Snes9x is a portable, freeware Super Nintendo Entertainment System (SNES) emulator.")
+#define SNES9XWPROGIDDESC TEXT("Snes9x ROM 文件")
+#define SNES9XWAPPDESC TEXT("Snes9x 是一款便携、免费的SNES超任模拟器。")
 #define SNES9XWAPPNAME TEXT("Snes9x")
 #define REGCREATEKEY(key,subkey) \
 	if(regResult=RegCreateKeyEx(key, subkey,\
@@ -7275,7 +7274,7 @@ void LoadExts(void)
 	#endif
 		if(!in.is_open())
 		{
-			MessageBox(GUI.hWnd, TEXT("Fatal Error: The File \"Valid.Ext\" could not be found or created."), TEXT("Error"), MB_ICONERROR|MB_OK);
+			MessageBox(GUI.hWnd, TEXT("致命错误：无法找到或创建文件“Valid.Ext”。"), TEXT("错误"), MB_ICONERROR|MB_OK);
 			PostQuitMessage(-1);
 		}
 	}
@@ -7405,7 +7404,7 @@ INT_PTR CALLBACK DlgNPOptions(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				SendDlgItemMessage(hDlg,IDC_PORTNUMBERA,EM_GETLINE,0,(LPARAM)defPort);
 				if(_ttoi(defPort)<1024||_ttoi(defPort)>65535)
 				{
-					MessageBox(hDlg,TEXT("Port Number needs to be betweeb 1024 and 65535"),TEXT("Error"),MB_OK);
+					MessageBox(hDlg,TEXT("端口号需介于 1024 和 65535 之间"),TEXT("错误"),MB_OK);
 					break;
 				}
 				else
@@ -7490,7 +7489,7 @@ void UpdateModeComboBox(HWND hComboBox)
 	}
 	if(!foundCurMode) {
 		dm.push_back(GUI.FullscreenMode);
-		_stprintf( modeTxt, TEXT("Unsupported mode selected"));
+		_stprintf( modeTxt, TEXT("所选模式不受支持"));
 		ComboBox_AddString(hComboBox,modeTxt);
 		ComboBox_SetCurSel(hComboBox,ComboBox_GetCount(hComboBox)-1);
 	}
@@ -7544,15 +7543,15 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         WinRefreshDisplay();
 
-        CreateToolTip(IDC_EMUFULLSCREEN, hDlg, TEXT("Emulate fullscreen by creating a window that spans the entire screen when going fullscreen"));
-        CreateToolTip(IDC_AUTOFRAME, hDlg, TEXT("Try to achieve 50/60 fps by limiting the speed and skipping at most 'max skipped frames'"));
-        CreateToolTip(IDC_MAXSKIP, hDlg, TEXT("Try to achieve 50/60 fps by limiting the speed and skipping at most 'max skipped frames'"));
-        CreateToolTip(IDC_FIXEDSKIP, hDlg, TEXT("Always skip a fixed number of frames - no speed limit"));
-        CreateToolTip(IDC_SKIPCOUNT, hDlg, TEXT("Always skip a fixed number of frames - no speed limit"));
-        CreateToolTip(IDC_HIRES, hDlg, TEXT("Support the hi-res mode that a few games use, otherwise render them in low-res"));
-        CreateToolTip(IDC_HEIGHT_EXTEND, hDlg, TEXT("Display an extra 15 pixels at the bottom, which few games use. Also increases AVI output size from 256x224 to 256x240"));
-        CreateToolTip(IDC_MESSAGES_IN_IMAGE, hDlg, TEXT("Draw text inside the SNES image (will get into AVIs, screenshots, and filters)"));
-		CreateToolTip(IDC_MESSAGES_SCALE, hDlg, TEXT("Try to scale messages with EPX instead of Simple, only works for 2x and 3x and when displaying after filters"));
+        CreateToolTip(IDC_EMUFULLSCREEN, hDlg, TEXT("通过在全屏时创建一个跨越整个屏幕的窗口来模拟全屏"));
+        CreateToolTip(IDC_AUTOFRAME, hDlg, TEXT("通过限制速度并最多跳过 '最大跳帧数' 帧，尝试达到 50/60 fps"));
+        CreateToolTip(IDC_MAXSKIP, hDlg, TEXT("通过限制速度并最多跳过 '最大跳帧数' 帧，尝试达到 50/60 fps"));
+        CreateToolTip(IDC_FIXEDSKIP, hDlg, TEXT("始终跳过固定数量的帧 - 无速度限制"));
+        CreateToolTip(IDC_SKIPCOUNT, hDlg, TEXT("始终跳过固定数量的帧 - 无速度限制"));
+        CreateToolTip(IDC_HIRES, hDlg, TEXT("支持少数游戏使用的高分辨率模式，否则以低分辨率渲染"));
+        CreateToolTip(IDC_HEIGHT_EXTEND, hDlg, TEXT("在底部显示少数游戏使用的额外 15 像素。同时将 AVI 输出尺寸从 256x224 增加到 256x240"));
+        CreateToolTip(IDC_MESSAGES_IN_IMAGE, hDlg, TEXT("在 SNES 图像内绘制文字（会进入 AVI、截图和滤镜）"));
+		CreateToolTip(IDC_MESSAGES_SCALE, hDlg, TEXT("尝试使用 EPX 而非 Simple 缩放消息，仅在 2x 和 3x 且滤镜后显示时生效"));
 
         prevOutputMethod = GUI.outputMethod;
         prevScale = GUI.Scale;
@@ -7572,7 +7571,7 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
         lstrcpy(prevD3DShaderFile, GUI.D3DshaderFileName);
         lstrcpy(prevOGLShaderFile, GUI.OGLshaderFileName);
 
-        _stprintf(s, TEXT("Current: %dx%d %dbit %dHz"), GUI.FullscreenMode.width, GUI.FullscreenMode.height, GUI.FullscreenMode.depth, GUI.FullscreenMode.rate);
+        _stprintf(s, TEXT("当前：%dx%d %dbit %dHz"), GUI.FullscreenMode.width, GUI.FullscreenMode.height, GUI.FullscreenMode.depth, GUI.FullscreenMode.rate);
         SendDlgItemMessage(hDlg, IDC_CURRMODE, WM_SETTEXT, 0, (LPARAM)s);
 
         if (GUI.DoubleBuffered)
@@ -7621,7 +7620,7 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
             SendDlgItemMessage(hDlg, IDC_ASPECTDROP, CB_SETCURSEL, (WPARAM)1, 0);
             break;
         default:
-            SendDlgItemMessage(hDlg, IDC_ASPECTDROP, CB_ADDSTRING, 0, (LPARAM)TEXT("Custom"));
+            SendDlgItemMessage(hDlg, IDC_ASPECTDROP, CB_ADDSTRING, 0, (LPARAM)TEXT("自定义"));
             SendDlgItemMessage(hDlg, IDC_ASPECTDROP, CB_SETCURSEL, (WPARAM)2, 0);
             break;
         }
@@ -7870,9 +7869,9 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			ofn.lStructSize = sizeof(OPENFILENAME);
 			ofn.hwndOwner = hDlg;
-			ofn.lpstrFilter = TEXT("Shader Files\0*.shader;*.cg;*.cgp\0All Files\0*.*\0\0");
+			ofn.lpstrFilter = TEXT("着色器文件\0*.shader;*.cg;*.cgp\0所有文件\0*.*\0\0");
 			ofn.lpstrFile = openFileName;
-			ofn.lpstrTitle = TEXT("Select Shader");
+			ofn.lpstrTitle = TEXT("选择着色器");
 			ofn.lpstrDefExt = TEXT("shader");
 			ofn.nMaxFile = MAX_PATH;
 			ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
@@ -7889,9 +7888,9 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 			ofn.lStructSize = sizeof(OPENFILENAME);
 			ofn.hwndOwner = hDlg;
-			ofn.lpstrFilter = TEXT("Shader Files\0*.shader;*.cg;*.cgp;*.glsl;*.glslp;*.slang;*.slangp\0All Files\0*.*\0\0");
+			ofn.lpstrFilter = TEXT("着色器文件\0*.shader;*.cg;*.cgp;*.glsl;*.glslp;*.slang;*.slangp\0所有文件\0*.*\0\0");
 			ofn.lpstrFile = openFileName;
-			ofn.lpstrTitle = TEXT("Select Shader");
+			ofn.lpstrTitle = TEXT("选择着色器");
 			ofn.lpstrDefExt = TEXT("shader");
 			ofn.nMaxFile = MAX_PATH;
 			ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
@@ -7908,7 +7907,7 @@ INT_PTR CALLBACK DlgFunky(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			int len = lstrlen(GUI.OGLshaderFileName);
             if((len < 6 || _tcsncicmp(&GUI.OGLshaderFileName[len - 6], TEXT(".glslp"), 6)) &&
 			   (len < 7 || _tcsncicmp(&GUI.OGLshaderFileName[len - 7], TEXT(".slangp"), 7))) {
-                MessageBox(GUI.hWnd, TEXT("Parameters are only supported for .glslp and .slangp shaders"), TEXT("No Parameters"), MB_OK | MB_ICONINFORMATION);
+                MessageBox(GUI.hWnd, TEXT("参数仅支持 .glslp 和 .slangp 着色器"), TEXT("无参数"), MB_OK | MB_ICONINFORMATION);
                 break;
             }
 			ShowWindow(hDlg, SW_HIDE);
@@ -8695,11 +8694,9 @@ int WinSearchCheatDatabase()
 
 	MessageBox(GUI.hWnd,
 		reason == -1 ?
-			TEXT("The database file cheats.bml was not found. It is normally installed with "
-				"Snes9x, but you may also place a custom copy in your configuration or cheats directory.") :
-			TEXT("No matching game was found in the databases. If you are using a non-official "
-				"translation or modified copy, you may be able to find and manually enter the codes."),
-		reason == -1 ? TEXT("Couldn't Find Cheats Database") : TEXT("No Matching Game Found"),
+			TEXT("未找到数据库文件 cheats.bml。它通常会随 \r\nSnes9x 一起安装，但你也可以将自定义副本放入配置或金手指目录。") :
+			TEXT("在数据库中未找到匹配的游戏。如果你使用的是非官方\r\n汉化或修改版，或许可以自行查找并手动输入这些代码。"),
+		reason == -1 ? TEXT("找不到金手指数据库") : TEXT("未找到匹配的游戏"),
 		MB_OK | MB_ICONEXCLAMATION);
 
 	return reason;
@@ -9016,8 +9013,8 @@ INT_PTR CALLBACK DlgCheater(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				break;
 			case IDC_DELETE_ALL:
 				if (MessageBox(hDlg,
-					TEXT("This will remove all cheats for this game."),
-					TEXT("Remove all"),
+					TEXT("这将删除本游戏的所有金手指。"),
+					TEXT("全部移除"),
 					MB_OKCANCEL | MB_ICONWARNING) != IDOK)
 				{
 					break;
@@ -9038,8 +9035,8 @@ INT_PTR CALLBACK DlgCheater(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				break;
 			case IDC_SEARCH_DB:
 				if (MessageBox(hDlg,
-					TEXT("This will apply current changes from the cheat dialog, try to import cheats from the cheat database, then reopen the dialog."),
-					TEXT("Search Database"),
+					TEXT("这将应用金手指对话框中的当前更改，尝试从金手指数据库导入金手指，然后重新打开该对话框。"),
+					TEXT("搜索数据库"),
 					MB_OKCANCEL | MB_ICONINFORMATION) == IDOK)
 				{
 					PostMessage(hDlg, WM_COMMAND, MAKEWPARAM(IDOK, NC_SEARCHDB), (LPARAM)GetDlgItem(hDlg, IDOK));
@@ -9364,7 +9361,7 @@ INT_PTR CALLBACK DlgCheatSearch(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 			LVCOLUMN col;
 			TCHAR temp[32];
-			lstrcpy(temp,TEXT("Address"));
+			lstrcpy(temp,TEXT("地址"));
 			memset(&col, 0, sizeof(LVCOLUMN));
 			col.mask=LVCF_FMT|LVCF_ORDER|LVCF_TEXT|LVCF_WIDTH;
 			col.fmt=LVCFMT_LEFT;
@@ -9375,7 +9372,7 @@ INT_PTR CALLBACK DlgCheatSearch(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 			ListView_InsertColumn(GetDlgItem(hDlg,IDC_ADDYS),   0,   &col);
 
-			lstrcpy(temp,TEXT("Curr. Value"));
+			lstrcpy(temp,TEXT("当前值"));
 			memset(&col, 0, sizeof(LVCOLUMN));
 			col.mask=LVCF_FMT|LVCF_ORDER|LVCF_TEXT|LVCF_WIDTH|LVCF_SUBITEM;
 			col.fmt=LVCFMT_LEFT;
@@ -9387,7 +9384,7 @@ INT_PTR CALLBACK DlgCheatSearch(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 			ListView_InsertColumn(GetDlgItem(hDlg,IDC_ADDYS),    1,   &col);
 
-			lstrcpy(temp,TEXT("Prev. Value"));
+			lstrcpy(temp,TEXT("此前值"));
 			memset(&col, 0, sizeof(LVCOLUMN));
 			col.mask=LVCF_FMT|LVCF_ORDER|LVCF_TEXT|LVCF_WIDTH|LVCF_SUBITEM;
 			col.fmt=LVCFMT_LEFT;

@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -203,7 +203,7 @@ bool CD3DCG::LoadShader(const TCHAR *shaderFile)
 		hr = pDevice->CreateVertexBuffer(sizeof(VERTEX)*4,D3DUSAGE_WRITEONLY,0,D3DPOOL_MANAGED,&pass.vertexBuffer,NULL);
 		if(FAILED(hr)) {
 			pass.vertexBuffer = NULL;
-			DXTRACE_ERR_MSGBOX(TEXT("Error creating vertex buffer"), hr);
+			DXTRACE_ERR_MSGBOX(TEXT("创建顶点缓冲区出错"), hr);
 			return false;
 		}
 
@@ -254,7 +254,7 @@ void CD3DCG::ensureTextureSize(LPDIRECT3DTEXTURE9 &tex, float2 &texSize,
 		texSize = wantedSize;
 
 		if(FAILED(hr)) {
-			DXTRACE_ERR_MSGBOX(TEXT("Error while creating texture"), hr);
+			DXTRACE_ERR_MSGBOX(TEXT("创建纹理时出错"), hr);
 			return;
 		}
 	}
@@ -692,7 +692,7 @@ void CD3DCG::setupVertexDeclaration(shaderPass &pass)
 	LPDIRECT3DVERTEXDECLARATION9 vertexDeclaration;
 	HRESULT hr = pDevice->CreateVertexDeclaration(vElems,&vertexDeclaration);
 	if(FAILED(hr)) {
-		DXTRACE_ERR_MSGBOX(TEXT("Error creating vertex declaration"), hr);
+		DXTRACE_ERR_MSGBOX(TEXT("创建顶点声明出错"), hr);
 	}
 	if(pass.vertexDeclaration)
 		pass.vertexDeclaration->Release();

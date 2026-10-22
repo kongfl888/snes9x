@@ -1,4 +1,4 @@
-#include "snes9x.h"
+﻿#include "snes9x.h"
 #include <windows.h>
 #include <png.h>
 #include "dxerr.h"
@@ -229,7 +229,7 @@ bool d3d_create_texture_from_file(LPDIRECT3DDEVICE9 pDevice, LPCTSTR pSrcFile, L
 
 		if (FAILED(hr = pTexture->LockRect(0, &lr, NULL, 0))) {
 			pTexture->Release();
-			DXTRACE_ERR_MSGBOX(TEXT("Unable to lock texture"), hr);
+			DXTRACE_ERR_MSGBOX(TEXT("无法锁定纹理"), hr);
 		}
 		else {
 			memcpy(lr.pBits, bytes, lr.Pitch * height);

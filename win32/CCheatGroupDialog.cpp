@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -101,11 +101,11 @@ bool CCheatGroupDialog::ValidateCheatCodes(std::wstring tempCheatCodes)
         if (valid_cheat.empty())
         {
             std::wostringstream ss;
-            ss << L"Line " << std::to_wstring(i + 1) << L" has invalid code: " << parts[i] << std::endl;
+            ss << L"第 " << std::to_wstring(i + 1) << L" 行包含无效代码：" << parts[i] << std::endl;
             std::wstring prompt = ss.str();
             MessageBox(windowHandle,
                 prompt.c_str(),
-                TEXT("Validation Failed"),
+                TEXT("验证失败"),
                 MB_OK | MB_ICONWARNING);
             return FALSE;
         }

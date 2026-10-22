@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -659,7 +659,7 @@ HWND CreateInputCustom(HWND hwndParent)
     hwndCtrl = CreateWindowEx(
                  WS_EX_CLIENTEDGE, // give it a standard border
                  szClassName,
-                 _T("A custom control"),
+                 _T("自定义控件"),
                  WS_VISIBLE | WS_CHILD,
                  0, 0, 100, 100,
                  hwndParent,

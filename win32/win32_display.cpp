@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -221,8 +221,8 @@ bool WinDisplayReset(void)
 
 		auto newDriverName = driverNames[GUI.outputMethod];
 		TCHAR msg[512];
-		_stprintf(msg, TEXT("Couldn't load selected driver: %s. Trying %s."), oldDriverName, newDriverName);
-		MessageBox(GUI.hWnd, msg, TEXT("Snes9x Display Driver"), MB_OK | MB_ICONERROR);
+		_stprintf(msg, TEXT("无法加载所选驱动：%s。正在尝试 %s。"), oldDriverName, newDriverName);
+		MessageBox(GUI.hWnd, msg, TEXT("Snes9x 显示驱动"), MB_OK | MB_ICONERROR);
 
 		initialized = S9xDisplayOutput->Initialize(hWndRender);
 	}
@@ -240,14 +240,14 @@ bool WinDisplayReset(void)
 
             if (!DwmFlushProc || !DwmIsCompositionEnabledProc)
             {
-                MessageBox(GUI.hWnd, TEXT("Couldn't load DWM functions. DWM Sync is disabled."), TEXT("Warning"), MB_OK | MB_ICONWARNING);
+                MessageBox(GUI.hWnd, TEXT("无法加载 DWM 函数。已禁用 DWM 同步。"), TEXT("警告"), MB_OK | MB_ICONWARNING);
                 GUI.DWMSync = false;
             }
         }
 
 		return true;
 	} else {
-		MessageBox (GUI.hWnd, Languages[ GUI.Language].errInitDD, TEXT("Snes9x - Display Failure"), MB_OK | MB_ICONSTOP);
+		MessageBox (GUI.hWnd, Languages[ GUI.Language].errInitDD, TEXT("Snes9x - 显示失败"), MB_OK | MB_ICONSTOP);
 		return false;
 	}
 }

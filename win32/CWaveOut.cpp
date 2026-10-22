@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -318,7 +318,7 @@ std::vector<std::wstring> CWaveOut::GetDeviceList()
 {
     std::vector<std::wstring> device_list;
 
-    device_list.push_back(_T("Default"));
+    device_list.push_back(_T("默认"));
 
     std::map<std::wstring, std::wstring> endpointId_deviceName_map;
 

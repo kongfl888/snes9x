@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -88,7 +88,7 @@ bool CDirect3D::Initialize(HWND hWnd)
 
 	pD3D = Direct3DCreate9(D3D_SDK_VERSION);
 	if(pD3D == NULL) {
-		DXTRACE_ERR_MSGBOX(TEXT("Error creating initial D3D9 object"), 0);
+		DXTRACE_ERR_MSGBOX(TEXT("创建初始 D3D9 对象出错"), 0);
 		return false;
 	}
 
@@ -108,19 +108,19 @@ bool CDirect3D::Initialize(HWND hWnd)
 					  &dPresentParams,
                       &pDevice);
 	if(FAILED(hr)) {
-		DXTRACE_ERR_MSGBOX(TEXT("Error creating D3D9 device"), hr);
+		DXTRACE_ERR_MSGBOX(TEXT("创建 D3D9 设备出错"), hr);
 		return false;
 	}
 
 	hr = pDevice->CreateVertexBuffer(sizeof(vertexStream),D3DUSAGE_WRITEONLY,0,D3DPOOL_MANAGED,&vertexBuffer,NULL);
 	if(FAILED(hr)) {
-		DXTRACE_ERR_MSGBOX(TEXT("Error creating vertex buffer"), hr);
+		DXTRACE_ERR_MSGBOX(TEXT("创建顶点缓冲区出错"), hr);
 		return false;
 	}
 
 	hr = pDevice->CreateVertexDeclaration(vertexElems,&vertexDeclaration);
 	if(FAILED(hr)) {
-		DXTRACE_ERR_MSGBOX(TEXT("Error creating vertex declaration"), hr);
+		DXTRACE_ERR_MSGBOX(TEXT("创建顶点声明出错"), hr);
 		return false;
 	}
 
@@ -130,7 +130,7 @@ bool CDirect3D::Initialize(HWND hWnd)
 		cgContext = cgCreateContext();
 		hr = cgD3D9SetDevice(pDevice);
 		if(FAILED(hr)) {
-			DXTRACE_ERR_MSGBOX(TEXT("Error setting cg device"), hr);
+			DXTRACE_ERR_MSGBOX(TEXT("设置 CG 设备出错"), hr);
 		}
 		cgShader = new CD3DCG(cgContext,pDevice);
 	}
@@ -251,7 +251,7 @@ bool CDirect3D::SetShaderCG(const TCHAR *file)
 {
 	if(!cgAvailable) {
 		if(file)
-			MessageBox(NULL, TEXT("The CG runtime is unavailable, CG shaders will not run.\nConsult the snes9x readme for information on how to obtain the runtime."), TEXT("CG Error"),
+			MessageBox(NULL, TEXT("CG 运行时不可用，CG 着色器将无法运行。\n有关如何获取该运行时的信息，请参阅 snes9x 自述文件。"), TEXT("CG 错误"),
 				MB_OK|MB_ICONEXCLAMATION);
         return false;
     }
@@ -297,14 +297,14 @@ void CDirect3D::Render(SSurface Src)
 				    ResetDevice();
 				return;
 			default:
-				DXTRACE_ERR_MSGBOX(TEXT("Internal driver error"), hr);
+				DXTRACE_ERR_MSGBOX(TEXT("内部驱动错误"), hr);
 				return;
 		}
 	}
 
 	//BlankTexture(drawSurface);
 	if(FAILED(hr = drawSurface->LockRect(0, &lr, NULL, 0))) {
-		DXTRACE_ERR_MSGBOX(TEXT("Unable to lock texture"), hr);
+		DXTRACE_ERR_MSGBOX(TEXT("无法锁定纹理"), hr);
 		return;
 	} else {
 		Dst.Surface = (unsigned char *)lr.pBits;
@@ -406,7 +406,7 @@ void CDirect3D::CreateDrawSurface()
 			NULL );
 
 		if(FAILED(hr)) {
-			DXTRACE_ERR_MSGBOX(TEXT("Error while creating texture"), hr);
+			DXTRACE_ERR_MSGBOX(TEXT("创建纹理时出错"), hr);
 			return;
 		}
 	}
@@ -436,7 +436,7 @@ bool CDirect3D::BlankTexture(LPDIRECT3DTEXTURE9 texture)
 	HRESULT hr;
 
 	if(FAILED(hr = texture->LockRect(0, &lr, NULL, 0))) {
-		DXTRACE_ERR_MSGBOX(TEXT("Unable to lock texture"), hr);
+		DXTRACE_ERR_MSGBOX(TEXT("无法锁定纹理"), hr);
 		return false;
 	} else {
 		memset(lr.pBits, 0, lr.Pitch * quadTextureSize);
@@ -598,7 +598,7 @@ bool CDirect3D::ResetDevice()
 	}
 
 	if(FAILED(hr = pDevice->Reset(&dPresentParams))) {
-		DXTRACE_ERR(TEXT("Unable to reset device"), hr);
+		DXTRACE_ERR(TEXT("无法重置设备"), hr);
 		return false;
 	}
 

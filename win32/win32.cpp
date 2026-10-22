@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -277,17 +277,17 @@ void S9xMessage (int type, int, const char *str)
 		case S9X_WARNING:
 			fprintf(stdout, "%s\n", str);
 			if(Settings.StopEmulation)
-				MessageBoxA(GUI.hWnd, str, "Warning",     MB_OK | MB_ICONWARNING);
+				MessageBox(GUI.hWnd, _tFromChar(str), TEXT("警告"),     MB_OK | MB_ICONWARNING);
 			break;
 		case S9X_ERROR:
 			fprintf(stderr, "%s\n", str);
 			if(Settings.StopEmulation)
-				MessageBoxA(GUI.hWnd, str, "Error",       MB_OK | MB_ICONERROR);
+				MessageBox(GUI.hWnd, _tFromChar(str), TEXT("错误"),       MB_OK | MB_ICONERROR);
 			break;
 		case S9X_FATAL_ERROR:
 			fprintf(stderr, "%s\n", str);
 			if(Settings.StopEmulation)
-				MessageBoxA(GUI.hWnd, str, "Fatal Error", MB_OK | MB_ICONERROR);
+				MessageBox(GUI.hWnd, _tFromChar(str), TEXT("致命错误"), MB_OK | MB_ICONERROR);
 			break;
 		default:
 				fprintf(stdout, "%s\n", str);

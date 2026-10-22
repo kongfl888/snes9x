@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -116,7 +116,7 @@ bool CGLCG::LoadShader(const TCHAR *shaderFile)
 	GLenum error;
 
 	if(!fboFunctionsLoaded) {
-		MessageBox(NULL, TEXT("Your OpenGL graphics driver does not support framebuffer objects.\nYou will not be able to use CG shaders in OpenGL mode."), TEXT("CG Error"),
+		MessageBox(NULL, TEXT("你的 OpenGL 图形驱动不支持帧缓冲对象。\n你将无法在 OpenGL 模式下使用 CG 着色器。"), TEXT("CG 错误"),
 			MB_OK|MB_ICONEXCLAMATION);
         return false;
     }

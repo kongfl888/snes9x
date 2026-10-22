@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -628,7 +628,7 @@ bool COpenGL::SetShadersCG(const TCHAR *file)
 {
 	if(!cgAvailable) {
 		if(file)
-			MessageBox(NULL, TEXT("The CG runtime is unavailable, CG shaders will not run.\nConsult the snes9x readme for information on how to obtain the runtime."), TEXT("CG Error"),
+			MessageBox(NULL, TEXT("CG 运行时不可用，CG 着色器将无法运行。\n有关如何获取该运行时的信息，请参阅 snes9x 自述文件。"), TEXT("CG 错误"),
 				MB_OK|MB_ICONEXCLAMATION);
         return false;
     }
@@ -691,7 +691,7 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 		return true;
 
 	if (!LoadShaderFunctions()) {
-		MessageBox(NULL, TEXT("Unable to load OpenGL shader functions"), TEXT("Shader Loading Error"),
+		MessageBox(NULL, TEXT("无法加载 OpenGL 着色器函数"), TEXT("着色器加载错误"),
 			MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
@@ -699,7 +699,7 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 	hr = CoCreateInstance(CLSID_DOMDocument, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pXMLDoc));
 
 	if (FAILED(hr)) {
-		MessageBox(NULL, TEXT("Error creating XML Parser"), TEXT("Shader Loading Error"),
+		MessageBox(NULL, TEXT("创建 XML 解析器出错"), TEXT("着色器加载错误"),
 			MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
@@ -718,8 +718,8 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 	SysFreeString(fileName.bstrVal);
 
 	if (FAILED(hr) || hr == S_FALSE) {
-		_stprintf(errorMsg, TEXT("Error loading GLSL shader file:\n%s"), glslFileName);
-		MessageBox(NULL, errorMsg, TEXT("Shader Loading Error"), MB_OK | MB_ICONEXCLAMATION);
+		_stprintf(errorMsg, TEXT("加载 GLSL 着色器文件出错：\n%s"), glslFileName);
+		MessageBox(NULL, errorMsg, TEXT("着色器加载错误"), MB_OK | MB_ICONEXCLAMATION);
 		pXMLDoc->Release();
 		return false;
 	}
@@ -729,8 +729,8 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 
 	hr = pXMLDoc->get_documentElement(&pXDE);
 	if (FAILED(hr) || hr == S_FALSE) {
-		_stprintf(errorMsg, TEXT("Error loading root element from file:\n%s"), glslFileName);
-		MessageBox(NULL, errorMsg, TEXT("Shader Loading Error"), MB_OK | MB_ICONEXCLAMATION);
+		_stprintf(errorMsg, TEXT("从文件加载根元素出错：\n%s"), glslFileName);
+		MessageBox(NULL, errorMsg, TEXT("着色器加载错误"), MB_OK | MB_ICONEXCLAMATION);
 		pXMLDoc->Release();
 		return false;
 	}
@@ -741,8 +741,8 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 	pXDE->Release();
 
 	if (attributeValue.vt != VT_BSTR || lstrcmpiW(attributeValue.bstrVal, L"glsl")) {
-		_stprintf(errorMsg, TEXT("Shader language is <%s>, expected <GLSL> in file:\n%s"), attributeValue.bstrVal, glslFileName);
-		MessageBox(NULL, errorMsg, TEXT("Shader Loading Error"), MB_OK | MB_ICONEXCLAMATION);
+		_stprintf(errorMsg, TEXT("着色器语言为 <%s>，文件期望为 <GLSL>：\n%s"), attributeValue.bstrVal, glslFileName);
+		MessageBox(NULL, errorMsg, TEXT("着色器加载错误"), MB_OK | MB_ICONEXCLAMATION);
 		if (attributeValue.vt == VT_BSTR) SysFreeString(attributeValue.bstrVal);
 		pXMLDoc->Release();
 		return false;
@@ -784,8 +784,8 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 	pXMLDoc->Release();
 
 	if (!fragment && !vertex) {
-		_stprintf(errorMsg, TEXT("No vertex or fragment program in file:\n%s"), glslFileName);
-		MessageBox(NULL, errorMsg, TEXT("Shader Loading Error"), MB_OK | MB_ICONEXCLAMATION);
+		_stprintf(errorMsg, TEXT("文件中没有顶点或片段程序：\n%s"), glslFileName);
+		MessageBox(NULL, errorMsg, TEXT("着色器加载错误"), MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
 

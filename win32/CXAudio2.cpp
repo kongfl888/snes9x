@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -49,11 +49,11 @@ INT_PTR CALLBACK DlgXAudio2InitError(HWND hDlg, UINT msg, WPARAM wParam, LPARAM 
 			// display warning icon and set text of sys control (too long for resource)
 			HICON aIcn = LoadIcon(NULL, IDI_WARNING);
 			SendDlgItemMessage(hDlg, IDC_STATIC_ICON, STM_SETICON, (WPARAM)aIcn, 0);
-			SetDlgItemText(hDlg, IDC_SYSLINK_DX, TEXT("Unable to initialize XAudio2.\
-You will not be able to hear any sound effects or music while playing.\n\n\
-This is usually caused by not having a recent DirectX9 runtime installed.\n\
-You can download the most recent DirectX9 runtime here:\n\n\
-<a href=\"https://www.microsoft.com/en-us/download/details.aspx?id=35\">https://www.microsoft.com/en-us/download/details.aspx?id=35</a>"));
+			SetDlgItemText(hDlg, IDC_SYSLINK_DX, TEXT("未能初始化 XAudio2。\
+玩游戏时将听不到声音，\n\n\
+这通常是因为你的系统缺省 DirectX9 运行库，\n\
+你可以从下方链接中尝试下载和安装它：\n\n\
+<a href=\"https://www.ksite.cn/contents/dxsdk2010.html\">https://www.ksite.cn/contents/dxsdk2010.html</a>"));
 
 			// center dialog on parent
 			HWND parent = GetParent(hDlg);
@@ -112,7 +112,7 @@ bool CXAudio2::InitXAudio2(void)
 
 	HRESULT hr;
 	if ( FAILED(hr = XAudio2Create( &pXAudio2, 0 , XAUDIO2_DEFAULT_PROCESSOR ) ) ) {
-		DXTRACE_ERR_MSGBOX(TEXT("Unable to create XAudio2 object."),hr);
+		DXTRACE_ERR_MSGBOX(TEXT("无法创建 XAudio2 对象。"),hr);
 		DialogBox(GUI.hInstance, MAKEINTRESOURCE(IDD_DIALOG_XAUDIO2_INIT_ERROR), GUI.hWnd, DlgXAudio2InitError);
 		return false;
 	}
@@ -136,7 +136,7 @@ bool CXAudio2::InitVoices(void)
 
 	if ( FAILED(hr = pXAudio2->CreateMasteringVoice( &pMasterVoice, 2,
 		Settings.SoundPlaybackRate, 0, device_index, NULL ) ) ) {
-			DXTRACE_ERR_MSGBOX(TEXT("Unable to create mastering voice."),hr);
+			DXTRACE_ERR_MSGBOX(TEXT("无法创建主控语音。"),hr);
 			return false;
 	}
 
@@ -151,7 +151,7 @@ bool CXAudio2::InitVoices(void)
 
 	if( FAILED(hr = pXAudio2->CreateSourceVoice(&pSourceVoice, (WAVEFORMATEX*)&wfx,
 		XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO, this, NULL, NULL ) ) ) {
-			DXTRACE_ERR_MSGBOX(TEXT("Unable to create source voice."),hr);
+			DXTRACE_ERR_MSGBOX(TEXT("无法创建源语音。"),hr);
 			return false;
 	}
 
@@ -380,7 +380,7 @@ std::vector<std::wstring> CXAudio2::GetDeviceList()
         UINT32 num_devices;
         pXAudio2->GetDeviceCount(&num_devices);
 
-        device_list.push_back(_T("Default"));
+        device_list.push_back(_T("默认"));
 
         for (unsigned int i = 0; i < num_devices; i++)
         {

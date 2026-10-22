@@ -1,4 +1,4 @@
-/*****************************************************************************\
+﻿/*****************************************************************************\
      Snes9x - Portable Super Nintendo Entertainment System (TM) emulator.
                 This file is licensed under the Snes9x License.
    For further information, consult the LICENSE file in the root directory.
@@ -184,7 +184,7 @@ void CSaveLoadWithPreviewDlg::load_current_bank(HWND hDlg)
 void CSaveLoadWithPreviewDlg::init_window(HWND hDlg)
 {
     if(is_save_dialog)
-        SetWindowText(hDlg, L"Save with Preview");
+        SetWindowText(hDlg, L"带预览保存");
 
     int x_pos = 0;
     int y_pos = 0;
@@ -231,7 +231,7 @@ void CSaveLoadWithPreviewDlg::init_window(HWND hDlg)
 	TCHAR temp[20];
 	for (int i = 0; i < NUM_SAVE_BANKS; i++)
 	{
-		_stprintf(temp, _T("Bank #%d"), i);
+		_stprintf(temp, _T("库 #%d"), i);
 		ComboBox_AddString(combo_hwnd, temp);
 	}
 	ComboBox_SetCurSel(combo_hwnd, GUI.CurrentSaveBank);

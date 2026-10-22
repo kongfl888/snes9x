@@ -1,4 +1,4 @@
-//--------------------------------------------------------------------------------------
+﻿//--------------------------------------------------------------------------------------
 // File: DXErr.cpp
 //
 // DirectX Error Library
@@ -3441,7 +3441,7 @@ const WCHAR* WINAPI DXGetErrorStringW( _In_ HRESULT hr )
 // -------------------------------------------------------------
         CHK_ERRA(XAPO_E_FORMAT_UNSUPPORTED)
 
-        default: return L"Unknown error.";
+        default: return L"未知错误。";
     }
 }
 
@@ -7294,7 +7294,7 @@ void WINAPI DXGetErrorDescriptionW( _In_ HRESULT hr, _Out_cap_(count) WCHAR* des
 // -------------------------------------------------------------
         CHK_ERR(XAPO_E_FORMAT_UNSUPPORTED, "Requested audio format unsupported.")
 
-        default: wcscpy_s( desc, count, L"Unknown error." ); break;
+        default: wcscpy_s( desc, count, L"未知错误。" ); break;
     }
 }
 
@@ -7340,12 +7340,12 @@ HRESULT WINAPI DXTraceW( _In_z_ const WCHAR* strFile, _In_ DWORD dwLine, _In_ HR
         WCHAR strBufferMsg[1024];
         wcscpy_s( strBufferMsg, 1024, L"" );
         if( nMsgLen > 0 )
-            swprintf_s( strBufferMsg, 1024, L"Calling: %s\n", strMsg );
+            swprintf_s( strBufferMsg, 1024, L"调用：%s\n", strMsg );
 
-        swprintf_s( strBuffer, BUFFER_SIZE, L"File: %s\nLine: %s\nError Code: %s\n%sDo you want to debug the application?",
+        swprintf_s( strBuffer, BUFFER_SIZE, L"文件：%s\n行：%s\n错误代码：%s\n%s是否要调试该应用程序？",
                     strBufferFile, strBufferLine, strBufferError, strBufferMsg );
 
-        int nResult = MessageBoxW( GetForegroundWindow(), strBuffer, L"Unexpected error encountered", MB_YESNO | MB_ICONERROR );
+        int nResult = MessageBoxW( GetForegroundWindow(), strBuffer, L"遇到意外错误", MB_YESNO | MB_ICONERROR );
         if( nResult == IDYES )
             DebugBreak();
     }
