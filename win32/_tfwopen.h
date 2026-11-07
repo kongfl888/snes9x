@@ -71,34 +71,32 @@ public:
 #include <fstream>
 
 namespace std {
+/* libstdc++ has neither ios_base::_Openprot nor the FILE* constructor that
+ * the MSVC version of this wrapper exposes, so the MinGW variant keeps only
+ * the members the frontend actually uses. */
 class u8nifstream: public std::ifstream
 {
 public:
-	void __CLR_OR_THIS_CALL open(const char *_Filename, ios_base::openmode _Mode)
+	void open(const char *_Filename, ios_base::openmode _Mode)
 		{
-			std::ifstream::open(Utf8ToWide(_Filename), (ios_base::openmode)_Mode);
+			std::ifstream::open(Utf8ToWide(_Filename), _Mode);
 		}
 
-	void __CLR_OR_THIS_CALL open(const wchar_t *_Filename, ios_base::openmode _Mode)
+	void open(const wchar_t *_Filename, ios_base::openmode _Mode)
 		{
-			std::ifstream::open(_Filename, (ios_base::openmode)_Mode);
+			std::ifstream::open(_Filename, _Mode);
 		}
 
-	__CLR_OR_THIS_CALL u8nifstream()
+	u8nifstream()
 		: std::ifstream() {}
 
-	explicit __CLR_OR_THIS_CALL u8nifstream(const char *_Filename,
-		ios_base::openmode _Mode = ios_base::in,
-		int _Prot = (int)ios_base::_Openprot)
-		: std::ifstream(Utf8ToWide(_Filename),_Mode) {}
+	explicit u8nifstream(const char *_Filename,
+		ios_base::openmode _Mode = ios_base::in)
+		: std::ifstream(Utf8ToWide(_Filename), _Mode) {}
 
-	explicit __CLR_OR_THIS_CALL u8nifstream(const wchar_t *_Filename,
-		ios_base::openmode _Mode = ios_base::in,
-		int _Prot = (int)ios_base::_Openprot)
-		: std::ifstream(_Filename,_Mode,_Prot) {}
-
-	explicit __CLR_OR_THIS_CALL u8nifstream(FILE *_File)
-		: std::ifstream(_File) {}
+	explicit u8nifstream(const wchar_t *_Filename,
+		ios_base::openmode _Mode = ios_base::in)
+		: std::ifstream(_Filename, _Mode) {}
 };
 }
 #define ifstream u8nifstream
@@ -106,9 +104,18 @@ public:
 
 #define fopen _tfwopen
 #undef remove
+/* <stdio.h> already declares ::remove() as extern, so it cannot be shadowed
+ * by a static definition on MinGW, and a function-like macro of that name
+ * breaks <algorithm>. Callers that need the UTF-8 path handling use
+ * S9xRemoveFile() instead. */
+__forceinline static int S9xRemoveFile(const char *filename) {
+  return _twremove(filename);
+}
+#ifndef __MINGW32__
 __forceinline static int remove(const char *filename) {
   return _twremove(filename);
 }
+#endif
 #undef open
 __forceinline static int open(const char *filename, int oflag, int pmode) {
   return _twopen(filename, oflag, pmode);
