@@ -162,8 +162,8 @@ static bool S9xSaveConfigFile(ConfigFile &conf){
 
 	bool ret = try_save(fname.c_str(), conf);
 
-	remove(ftemp.c_str());
-	remove((fname + ".autobak").c_str());
+	S9xRemoveFile(ftemp.c_str());
+	S9xRemoveFile((fname + ".autobak").c_str());
 
 	ReleaseMutex(configMutex);
 	CloseHandle(configMutex);
@@ -271,7 +271,7 @@ const TCHAR*	WinParseCommandLineAndLoadConfigFile (TCHAR *line)
 					MoveFileExA((fname + ".autobak").c_str(), fname.c_str(), MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
 				}
 			}
-		  remove(ftemp.c_str());
+		  S9xRemoveFile(ftemp.c_str());
 		}
 	}
 

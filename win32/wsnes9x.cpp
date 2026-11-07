@@ -17,8 +17,8 @@
 //  (c) Copyright 2003-2006 blip, Nach, Matthew Kendora, funkyass and nitsuja
 
 #ifdef __MINGW32__
-#define _WIN32_IE 0x0501
-#define _WIN32_WINNT 0x0501
+#define _WIN32_IE 0x0601
+#define _WIN32_WINNT 0x0601
 #endif
 
 #pragma warning(disable: 4091)
@@ -4180,7 +4180,7 @@ void S9xRemoveFromRecentGames (int i)
    windows versions < vista. Since the jumplist is a win7 feature this
    is not a problem.
 */
-typedef HRESULT (STDAPICALLTYPE *SHCIFPN) (__in PCWSTR pszPath, __in_opt IBindCtx *pbc, __in REFIID riid, __deref_out void **ppv);
+typedef HRESULT (STDAPICALLTYPE *SHCIFPN) (PCWSTR pszPath, IBindCtx *pbc, REFIID riid, void **ppv);
 
 HRESULT Win7_JLSetRecentGames(ICustomDestinationList *pcdl, IObjectArray *poaRemoved, UINT maxSlots)
 {
@@ -7200,7 +7200,7 @@ bool RegisterExt(TCHAR *ext) {
     TCHAR   *szExeName;
 	HKEY	hKey;
 
-    if(!ext || ext==TEXT('\0'))
+    if(!ext || ext[0] == 0)
         return false;
 
     GetModuleFileName(NULL, szExePath, PATH_MAX);
@@ -8913,7 +8913,7 @@ INT_PTR CALLBACK DlgCheater(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 			case IDC_ADD_CHEAT:
 				{
-					std::string temp = WideToUtf8(GetDlgItemTextWstring(hDlg, IDC_CHEAT_CODE).c_str());
+					std::string temp = (char *)WideToUtf8(GetDlgItemTextWstring(hDlg, IDC_CHEAT_CODE).c_str());
 					std::wstring tempDesc = GetDlgItemTextWstring(hDlg, IDC_CHEAT_DESCRIPTION);
                     int s = tempDesc.length();
 
@@ -8954,7 +8954,7 @@ INT_PTR CALLBACK DlgCheater(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				{
 					unsigned int j;
 					std::wstring code = GetDlgItemTextWstring(hDlg, IDC_CHEAT_CODE);
-                    std::string codeUtf8 = WideToUtf8(code.c_str());
+                    std::string codeUtf8 = (char *)WideToUtf8(code.c_str());
 
 					std::string valid_cheat = S9xCheatValidate(codeUtf8);
 
@@ -9059,7 +9059,7 @@ INT_PTR CALLBACK DlgCheater(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 						{
 							return true;
 						}
-                        std::string temp = WideToUtf8(GetDlgItemTextWstring(hDlg, IDC_CHEAT_CODE).c_str());
+                        std::string temp = (char *)WideToUtf8(GetDlgItemTextWstring(hDlg, IDC_CHEAT_CODE).c_str());
 
 						if (temp[0] && (!S9xCheatValidate(temp).empty()))
 						{
@@ -10818,8 +10818,8 @@ INT_PTR CALLBACK DlgCreateMovie(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 					if(IsDlgButtonChecked(hDlg, IDC_CLEARSRAM) && IsDlgButtonChecked(hDlg, IDC_RECORD_RESET) && existsSRAM())
 					{
 						GUI.MovieClearSRAM = TRUE;
-						remove(S9xGetFilename (".srm", SRAM_DIR).c_str()); // delete SRAM if it exists (maybe unnecessary?)
-						remove(S9xGetFilename (".srm", ROMFILENAME_DIR).c_str());
+						S9xRemoveFile(S9xGetFilename (".srm", SRAM_DIR).c_str()); // delete SRAM if it exists (maybe unnecessary?)
+						S9xRemoveFile(S9xGetFilename (".srm", ROMFILENAME_DIR).c_str());
 						Memory.LoadSRAM(S9xGetFilename (".srm", SRAM_DIR).c_str()); // refresh memory (hard reset)
 					}
 					else if(!IsDlgButtonChecked(hDlg, IDC_CLEARSRAM) && IsDlgButtonChecked(hDlg, IDC_RECORD_RESET) && existsSRAM())
