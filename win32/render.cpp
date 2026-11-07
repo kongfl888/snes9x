@@ -2576,8 +2576,8 @@ inline
 void copyImage16To32(const uint16_t* src, int width, int height, int srcPitch,
                      uint32_t* trg, int yFirst, int yLast)
 {
-    yFirst = std::max(yFirst, 0);
-    yLast  = std::min(yLast, height);
+    yFirst = (std::max)(yFirst, 0);
+    yLast  = (std::min)(yLast, height);
     if (yFirst >= yLast || height <= 0 || width <= 0) return;
 
     for (int y = yFirst; y < yLast; ++y)
@@ -2597,8 +2597,8 @@ void stretchImage32To16(const uint32_t* src, int srcWidth, int srcHeight,
                         uint16_t* trg, int trgWidth, int trgHeight, int trgPitch,
                         int yFirst, int yLast)
 {
-    yFirst = std::max(yFirst, 0);
-    yLast  = std::min(yLast, trgHeight);
+    yFirst = (std::max)(yFirst, 0);
+    yLast  = (std::min)(yLast, trgHeight);
     if (yFirst >= yLast || srcHeight <= 0 || srcWidth <= 0) return;
 
     for (int y = yFirst; y < yLast; ++y)

@@ -10,6 +10,7 @@
 #include "../gfx.h"
 #include "../display.h"
 #include "wsnes9x.h"
+#include <guiddef.h>
 #include <msxml2.h>
 
 #include "../filter/hq2x.h"
@@ -696,7 +697,16 @@ bool COpenGL::SetShadersGLSL_OLD(const TCHAR *glslFileName)
 		return false;
 	}
 
+#ifdef __MINGW32__
+	// mingw-w64 ships msxml2.h but no matching import library, so the
+	// coclass is resolved from the version independent ProgID at run time.
+	CLSID clsid;
+	hr = CLSIDFromProgID(L"Msxml2.DOMDocument", &clsid);
+	if (SUCCEEDED(hr))
+		hr = CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pXMLDoc));
+#else
 	hr = CoCreateInstance(CLSID_DOMDocument, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pXMLDoc));
+#endif
 
 	if (FAILED(hr)) {
 		MessageBox(NULL, TEXT("Error creating XML Parser"), TEXT("Shader Loading Error"),

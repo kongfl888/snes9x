@@ -37,6 +37,13 @@ class CWaveOut : public IS9xSoundOutput
     UINT32 writeOffset;
     UINT32 partialOffset;
     std::vector<WAVEHDR> waveHeaders;
+
+    // Anti-click helpers: waveOut switches between queued blocks without
+    // any crossfade, so a discontinuity after an underrun is audible as a
+    // click. Fade the first blocks back in after playback (re)starts.
+    int fadeInRemaining;
+    int fadeInFrames;
+    void ApplyFadeIn(BYTE *data, UINT32 bytes);
   
   public:
     CWaveOut(void);

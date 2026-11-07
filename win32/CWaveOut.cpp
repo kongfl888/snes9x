@@ -5,6 +5,7 @@
 \*****************************************************************************/
 
 
+#include <cmath>
 #include "CWaveOut.h"
 #include <mmdeviceapi.h> // needs to be before snes9x.h, otherwise conflicts with SetFlags macro
 #include <Functiondiscoverykeys_devpkey.h>
@@ -24,6 +25,8 @@ CWaveOut::CWaveOut(void)
     submittedBytes = 0;
     playedBytesAccum = 0;
     lastPosBytes = 0;
+    fadeInRemaining = 0;
+    fadeInFrames = 0;
 }
 
 CWaveOut::~CWaveOut(void)
@@ -96,7 +99,32 @@ bool CWaveOut::SetupSound()
     }
     initDone = true;
 
+    // 2 ms fade-in at the start of playback.
+    fadeInFrames = (int)(Settings.SoundPlaybackRate * 2 / 1000);
+    if (fadeInFrames < 32)
+        fadeInFrames = 32;
+    fadeInRemaining = fadeInFrames;
+
     return true;
+}
+
+void CWaveOut::ApplyFadeIn(BYTE *data, UINT32 bytes)
+{
+    if (fadeInRemaining <= 0)
+        return;
+
+    int16_t *samples = (int16_t *)data;
+    UINT32 frames = bytes >> 2;
+    UINT32 n = frames < (UINT32)fadeInRemaining ? frames : (UINT32)fadeInRemaining;
+
+    for (UINT32 f = 0; f < n; f++)
+    {
+        double g = (double)(fadeInFrames - fadeInRemaining + (int)f + 1) / (double)fadeInFrames;
+        samples[f * 2]     = (int16_t)lrint(samples[f * 2] * g);
+        samples[f * 2 + 1] = (int16_t)lrint(samples[f * 2 + 1] * g);
+    }
+
+    fadeInRemaining -= (int)n;
 }
 
 void CWaveOut::SetVolume(double volume)
@@ -206,6 +234,9 @@ void CWaveOut::ProcessSound()
     if (bufferCount == 0)
     {
         RecoverFromUnderrun();
+        // Everything queued after the silence cushion would otherwise step
+        // straight from zero to the current level.
+        fadeInRemaining = fadeInFrames;
     }
 
     // Cheap lower bound first: bufferCount only lags completions, so this
@@ -284,6 +315,7 @@ void CWaveOut::ProcessSound()
             availableSamples -= samplesleftinblock;
             // A failed write never gets a WOM_DONE; counting it would leave a
             // phantom entry that blinds underrun recovery forever.
+            ApplyFadeIn((BYTE *)waveHeaders[writeOffset].lpData, singleBufferBytes);
             if (waveOutWrite(hWaveOut, &waveHeaders[writeOffset], sizeof(WAVEHDR)) == MMSYSERR_NOERROR)
             {
                 submittedBytes += singleBufferBytes;
@@ -297,6 +329,7 @@ void CWaveOut::ProcessSound()
     while (availableSamples >= singleBufferSamples && bufferCount < blockCount) {
         BYTE *curBuffer = (BYTE *)waveHeaders[writeOffset].lpData;
         S9xMixSamples(curBuffer, singleBufferSamples);
+        ApplyFadeIn(curBuffer, singleBufferBytes);
         if (waveOutWrite(hWaveOut, &waveHeaders[writeOffset], sizeof(WAVEHDR)) == MMSYSERR_NOERROR)
         {
             submittedBytes += singleBufferBytes;

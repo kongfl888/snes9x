@@ -76,7 +76,7 @@ INT_PTR CALLBACK CShaderParamDlg::DlgShaderParams(HWND hDlg, UINT msg, WPARAM wP
                 case SB_PAGEDOWN:
                     if(dlg->scrollpos >= maxPos)
                         break;
-                    delta = min(si.nPage, maxPos - dlg->scrollpos);
+                    delta = min((INT)si.nPage, maxPos - dlg->scrollpos);
                     break;
                 case SB_THUMBTRACK:
                     delta = (int)si.nTrackPos - dlg->scrollpos;

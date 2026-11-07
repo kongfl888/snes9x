@@ -34,6 +34,19 @@ private:
 	bool InitVoices(void);
 	void DeInitVoices(void);
 
+	// Anti-click helpers. XAudio2 switches buffers with no crossfade, so any
+	// discontinuity in the sample stream (start of playback, recovery from a
+	// starved queue, an abrupt volume change) is played back as a click.
+	// These routines smooth those transitions inside the block being queued.
+	bool started;							// voice actually started?
+	int fadeInRemaining;					// frames left in the current fade-in
+	int fadeInFrames;						// fade-in length in frames
+	double gain, targetGain;				// ramped software volume
+	bool wasMuted;							// previous mute state, for fade-in on unmute
+	void ApplyFadeIn(int16_t *data, UINT32 sampleCount);
+	void ApplyGainRamp(int16_t *data, UINT32 sampleCount);
+	void QueueSamples(UINT32 AudioBytes, BYTE *pAudioData);
+
 	void PushBuffer(UINT32 AudioBytes,BYTE *pAudioData,void *pContext);	
 	void BeginPlayback(void);
 	void StopPlayback(void);

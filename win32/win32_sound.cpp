@@ -4,12 +4,12 @@
    For further information, consult the LICENSE file in the root directory.
 \*****************************************************************************/
 
+#include "CXAudio2.h"
+#include "CWaveOut.h"
 #include "IS9xSoundOutput.h"
 #include "../snes9x.h"
 #include "../apu/apu.h"
 #include "wsnes9x.h"
-#include "CXAudio2.h"
-#include "CWaveOut.h"
 #include "win32_sound.h"
 #include "win32_display.h"
 
