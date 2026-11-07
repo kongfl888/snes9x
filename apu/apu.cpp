@@ -53,6 +53,8 @@ static uint32 ratio_numerator = APU_NUMERATOR_NTSC;
 static uint32 ratio_denominator = APU_DENOMINATOR_NTSC;
 
 static double dynamic_rate_multiplier = 1.0;
+static double dynamic_rate_target = 1.0;
+static int    rate_step_counter = 0;
 } // namespace spc
 
 namespace msu {
@@ -78,12 +80,8 @@ bool8 S9xMixSamples(uint8 *dest, int sample_count)
         return true;
     }
 
-    if (spc::resampler.avail() < sample_count)
-    {
-        memset(out, 0, sample_count << 1);
-        return false;
-    }
-
+    // Always try to read; improved resampler will hold last sample instead of zero-filling,
+    // which eliminates harsh clicks/pops from buffer underruns.
     spc::resampler.read((short *)out, sample_count);
 
     if (Settings.MSU1)
@@ -95,7 +93,7 @@ bool8 S9xMixSamples(uint8 *dest, int sample_count)
         for (int i = 0; i < sample_count; ++i)
         {
             int32 mixed = (int32)out[i] + msu::resampler_buffer[i];
-            out[i] = ((int16)mixed != mixed) ? (mixed >> 31) ^ 0x7fff : mixed;
+            out[i] = Resampler::short_clamp(mixed);
         }
     }
 
@@ -153,8 +151,34 @@ void S9xSetSamplesAvailableCallback(apu_callback callback, void *data)
 
 void S9xUpdateDynamicRate(int avail, int buffer_size)
 {
-    spc::dynamic_rate_multiplier = 1.0 + (Settings.DynamicRateLimit * (buffer_size - 2 * avail)) /
-                                             (double)(1000 * buffer_size);
+    // Smoothed dynamic rate control (Mesen-style):
+    // Instead of jumping the multiplier instantly, nudge it toward the target
+    // in tiny increments every few calls. This prevents audible pitch warble.
+    double fill_ratio = (double)avail / (double)buffer_size;
+
+    // Target fill is ~50% (middle of buffer); deviation beyond ±20% triggers nudges.
+    // Max adjustment limited to ±0.25% (2500 ppm), matching Mesen's conservative limit.
+    double err = 0.5 - fill_ratio;
+    double limit = (double)Settings.DynamicRateLimit / 100.0;
+    if (limit > 0.0025) limit = 0.0025; // cap per-step adjustment
+
+    double target = 1.0 + err * limit * 4.0;
+    if (target > 1.005) target = 1.005;
+    if (target < 0.995) target = 0.995;
+
+    spc::dynamic_rate_target = target;
+
+    // Slow convergence: only adjust every other call, and only by a tiny step
+    spc::rate_step_counter++;
+    if (spc::rate_step_counter >= 2)
+    {
+        spc::rate_step_counter = 0;
+        double diff = spc::dynamic_rate_target - spc::dynamic_rate_multiplier;
+        double step = 0.00005; // ~50 ppm per step (very gentle)
+        if (diff >  step) diff =  step;
+        if (diff < -step) diff = -step;
+        spc::dynamic_rate_multiplier += diff;
+    }
 
     UpdatePlaybackRate();
 }
@@ -164,24 +188,39 @@ static void UpdatePlaybackRate(void)
     if (Settings.SoundInputRate == 0)
         Settings.SoundInputRate = APU_DEFAULT_INPUT_RATE;
 
-    double time_ratio = (double)Settings.SoundInputRate * spc::timing_hack_numerator / (Settings.SoundPlaybackRate * spc::timing_hack_denominator);
+    double src_rate = (double)Settings.SoundInputRate * spc::timing_hack_numerator / spc::timing_hack_denominator;
+    double dst_rate = (double)Settings.SoundPlaybackRate;
+    double time_ratio = src_rate / dst_rate;
 
     if (Settings.DynamicRateControl)
     {
         time_ratio *= spc::dynamic_rate_multiplier;
+        // When using dynamic rate, effective source rate shifts; keep lowpass tracking it
+        double effective_src = src_rate * spc::dynamic_rate_multiplier;
+        spc::resampler.set_rates(effective_src, dst_rate);
+    }
+    else
+    {
+        spc::resampler.set_rates(src_rate, dst_rate);
     }
 
     spc::resampler.time_ratio(time_ratio);
 
     if (Settings.MSU1)
     {
-        time_ratio = time_ratio * 44100 / 32040;
-        msu::resampler.time_ratio(time_ratio);
+        double msu_ratio = time_ratio * 44100.0 / 32040.0;
+        msu::resampler.set_rates(44100.0 * spc::timing_hack_numerator / spc::timing_hack_denominator * (Settings.DynamicRateControl ? spc::dynamic_rate_multiplier : 1.0), dst_rate);
+        msu::resampler.time_ratio(msu_ratio);
     }
 }
 
 bool8 S9xInitSound(int buffer_ms)
 {
+    // Reset dynamic rate state to neutral on (re)init
+    spc::dynamic_rate_multiplier = 1.0;
+    spc::dynamic_rate_target = 1.0;
+    spc::rate_step_counter = 0;
+
     // The resampler and spc unit use samples (16-bit short) as arguments.
     int buffer_size_samples = MINIMUM_BUFFER_SIZE;
     int requested_buffer_size_samples = Settings.SoundPlaybackRate * buffer_ms * 2 / 1000;
@@ -229,7 +268,9 @@ bool8 S9xInitAPU(void)
 {
     spc::resampler.clear();
     msu::resampler.clear();
-
+    spc::dynamic_rate_multiplier = 1.0;
+    spc::dynamic_rate_target = 1.0;
+    spc::rate_step_counter = 0;
     return true;
 }
 

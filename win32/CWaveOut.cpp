@@ -224,15 +224,18 @@ void CWaveOut::ProcessSound()
 
     if (Settings.DynamicRateControl && !Settings.SoundSync)
     {
-        // Using rate control, we should always keep the emulator's sound buffers empty to
-        // maintain an accurate measurement.
-        if (availableSamples > (freeBytes >> 1))
+        // Gently trim excess samples instead of clearing the entire buffer which causes clicks.
+        if (availableSamples > (int)(singleBufferSamples * 2))
         {
             freeBytes = GetAvailableBytes();
-            if (availableSamples > (freeBytes >> 1))
+            if (availableSamples > (int)(singleBufferSamples * 2))
             {
-                S9xClearSamples();
-                return;
+                int excess = availableSamples - (int)(singleBufferSamples);
+                if (excess > 0) {
+                    // Discard excess by reading into a temp buffer (keeps resampler state coherent)
+                    std::vector<int16> tmp(excess);
+                    S9xMixSamples((uint8*)tmp.data(), excess);
+                }
             }
         }
     }
