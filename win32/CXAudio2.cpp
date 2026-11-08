@@ -298,12 +298,13 @@ void CXAudio2::ProcessSound()
 
 	if (Settings.DynamicRateControl && !Settings.SoundSync)
 	{
-		// Using rate control, we should always keep the emulator's sound buffers empty to
-		// maintain an accurate measurement.
-		if (availableSamples > (freeBytes >> 1))
+		// Using rate control, gently trim excess samples instead of clearing the entire buffer
+		// which causes audible clicks/pops. Keep at most one frame of samples queued.
+		if (availableSamples > (int)(singleBufferSamples * 2))
 		{
-			S9xClearSamples();
-			return;
+			int excess = availableSamples - (int)(singleBufferSamples);
+			if (excess > 0)
+				S9xMixSamples(soundBuffer + writeOffset, excess); // discard excess by reading & dropping
 		}
 	}
 
